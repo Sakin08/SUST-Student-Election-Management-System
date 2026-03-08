@@ -23,8 +23,23 @@ const StudentDashboard = () => {
       console.log("All elections:", res.data);
       console.log("User department:", user?.department);
       console.log("User batch:", user?.batch);
+      console.log("User role:", user?.role);
 
-      // Filter elections based on type and eligibility
+      // Admins can see all elections without filtering
+      if (user?.role === "admin" || user?.role === "superadmin") {
+        const allElectionsData = res.data.map((election) => ({
+          election,
+          show: true,
+          voterHall: null,
+        }));
+        setElectionsWithHall(allElectionsData);
+        setElections(res.data);
+        console.log("Admin view: Showing all elections");
+        setLoading(false);
+        return;
+      }
+
+      // Filter elections based on type and eligibility for regular students
       const eligibilityChecks = await Promise.all(
         res.data.map(async (election) => {
           // For hall elections, check if user is in eligible voters list
@@ -174,7 +189,7 @@ const StudentDashboard = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {electionsWithHall.map((item) => {
               const election = item.election;
               const voterHall = item.voterHall;
@@ -183,98 +198,148 @@ const StudentDashboard = () => {
               return (
                 <div
                   key={election._id}
-                  className="group relative bg-white rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 overflow-hidden flex flex-col"
+                  className="group relative bg-white rounded-3xl border-2 border-slate-200 shadow-lg hover:shadow-2xl hover:border-blue-300 transition-all duration-500 overflow-hidden flex flex-col"
                 >
-                  {/* Card Status Header */}
-                  <div className={`h-3 w-full ${color}`}></div>
+                  {/* Decorative gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-indigo-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
-                  <div className="p-8 flex-1 flex flex-col">
-                    <div className="flex justify-between items-start mb-6">
+                  {/* Card Status Header with gradient */}
+                  <div className={`h-2 w-full ${color} relative`}>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+                  </div>
+
+                  <div className="p-6 flex-1 flex flex-col relative z-10">
+                    {/* Status Badge and Type */}
+                    <div className="flex justify-between items-start mb-4">
                       <span
-                        className={`px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest ${color}`}
+                        className={`px-4 py-1.5 rounded-full text-[10px] font-black text-white uppercase tracking-widest shadow-lg ${color}`}
                       >
                         {label}
                       </span>
-                      <span className="text-slate-400 text-xs font-bold uppercase">
-                        {election.type === "hall"
-                          ? "🏢 হল"
-                          : election.type === "society"
-                            ? "🏛️ সোসাইটি"
-                            : election.type === "cr"
-                              ? "👤 CR"
-                              : "🎓 প্রধান"}
-                      </span>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-full">
+                        <span className="text-base">
+                          {election.type === "hall"
+                            ? "🏢"
+                            : election.type === "society"
+                              ? "🏛️"
+                              : election.type === "cr"
+                                ? "👤"
+                                : "🎓"}
+                        </span>
+                        <span className="text-[10px] font-black text-slate-600 uppercase">
+                          {election.type === "hall"
+                            ? "হল"
+                            : election.type === "society"
+                              ? "সোসাইটি"
+                              : election.type === "cr"
+                                ? "CR"
+                                : "প্রধান"}
+                        </span>
+                      </div>
                     </div>
 
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter leading-tight mb-4 group-hover:text-blue-600 transition-colors">
-                      {election.title}
-                    </h3>
+                    {/* Election Title with icon */}
+                    <div className="mb-4">
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                        {election.title}
+                      </h3>
+                      <div className="h-1 w-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full group-hover:w-24 transition-all"></div>
+                    </div>
 
-                    <div className="space-y-3 mb-8 text-sm font-bold text-slate-500">
+                    {/* Election Details */}
+                    <div className="space-y-2.5 mb-6 text-sm font-bold">
                       {election.type === "hall" && (
                         <>
                           {election.hall && (
-                            <div className="flex items-center gap-2 text-indigo-600">
-                              <span className="text-indigo-400">🏢</span>{" "}
-                              {election.hall === "SPH"
-                                ? "Shah Paran Hall"
-                                : election.hall === "B24H"
-                                  ? "Bijoy 24 Hall"
-                                  : election.hall === "SMAH"
-                                    ? "Syed Mujtaba Ali Hall"
-                                    : election.hall === "ASH"
-                                      ? "Ayesha Siddiqa Hall"
-                                      : election.hall === "BSCH"
-                                        ? "Begum Sirajunnesa Chowdhury Hall"
-                                        : election.hall === "FTZH"
-                                          ? "Fatimah Tuz Zahra Hall"
-                                          : election.hall}
+                            <div className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-3 py-2 rounded-xl">
+                              <span className="text-lg">🏢</span>
+                              <span className="text-xs">
+                                {election.hall === "SPH"
+                                  ? "Shah Paran Hall"
+                                  : election.hall === "B24H"
+                                    ? "Bijoy 24 Hall"
+                                    : election.hall === "SMAH"
+                                      ? "Syed Mujtaba Ali Hall"
+                                      : election.hall === "ASH"
+                                        ? "Ayesha Siddiqa Hall"
+                                        : election.hall === "BSCH"
+                                          ? "Begum Sirajunnesa Hall"
+                                          : election.hall === "FTZH"
+                                            ? "Fatimah Tuz Zahra Hall"
+                                            : election.hall}
+                              </span>
                             </div>
                           )}
                           {voterHall && (
-                            <div className="flex items-center gap-2 text-emerald-600">
-                              <span className="text-emerald-400">✓</span> আপনি
-                              যোগ্য:{" "}
-                              {voterHall === "SPH"
-                                ? "Shah Paran Hall"
-                                : voterHall === "B24H"
-                                  ? "Bijoy 24 Hall"
-                                  : voterHall === "SMAH"
-                                    ? "Syed Mujtaba Ali Hall"
-                                    : voterHall === "ASH"
-                                      ? "Ayesha Siddiqa Hall"
-                                      : voterHall === "BSCH"
-                                        ? "Begum Sirajunnesa Chowdhury Hall"
-                                        : voterHall === "FTZH"
-                                          ? "Fatimah Tuz Zahra Hall"
-                                          : voterHall}
+                            <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">
+                              <span className="text-lg">✓</span>
+                              <span className="text-xs">
+                                আপনি যোগ্য:{" "}
+                                {voterHall === "SPH"
+                                  ? "Shah Paran"
+                                  : voterHall === "B24H"
+                                    ? "Bijoy 24"
+                                    : voterHall === "SMAH"
+                                      ? "Syed Mujtaba Ali"
+                                      : voterHall === "ASH"
+                                        ? "Ayesha Siddiqa"
+                                        : voterHall === "BSCH"
+                                          ? "Begum Sirajunnesa"
+                                          : voterHall === "FTZH"
+                                            ? "Fatimah Tuz Zahra"
+                                            : voterHall}
+                              </span>
                             </div>
                           )}
                         </>
                       )}
                       {election.type === "society" && election.department && (
-                        <div className="flex items-center gap-2 text-blue-600">
-                          <span className="text-blue-400">🏛️</span>{" "}
-                          {election.department}
+                        <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-2 rounded-xl">
+                          <span className="text-lg">🏛️</span>
+                          <span className="text-xs">{election.department}</span>
                         </div>
                       )}
                       {election.type === "cr" &&
                         election.department &&
                         election.batch && (
-                          <div className="flex items-center gap-2 text-purple-600">
-                            <span className="text-purple-400">👤</span>{" "}
-                            {election.department} - {election.batch} ব্যাচ
+                          <div className="flex items-center gap-2 text-purple-600 bg-purple-50 px-3 py-2 rounded-xl">
+                            <span className="text-lg">👤</span>
+                            <span className="text-xs">
+                              {election.department} - {election.batch}
+                            </span>
                           </div>
                         )}
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-300">📅</span> শুরু:{" "}
-                        {new Date(election.startDate).toLocaleDateString(
-                          "bn-BD",
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-300">⌛</span> শেষ:{" "}
-                        {new Date(election.endDate).toLocaleDateString("bn-BD")}
+
+                      {/* Date Info */}
+                      <div className="grid grid-cols-2 gap-2 pt-2">
+                        <div className="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-2 rounded-xl">
+                          <span className="text-sm">📅</span>
+                          <div>
+                            <div className="text-[9px] font-bold text-slate-400 uppercase">
+                              শুরু
+                            </div>
+                            <div className="text-xs font-black text-slate-700">
+                              {new Date(election.startDate).toLocaleDateString(
+                                "bn-BD",
+                                { day: "numeric", month: "short" },
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-2 rounded-xl">
+                          <span className="text-sm">⌛</span>
+                          <div>
+                            <div className="text-[9px] font-bold text-slate-400 uppercase">
+                              শেষ
+                            </div>
+                            <div className="text-xs font-black text-slate-700">
+                              {new Date(election.endDate).toLocaleDateString(
+                                "bn-BD",
+                                { day: "numeric", month: "short" },
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Voting Countdown */}
@@ -286,38 +351,70 @@ const StudentDashboard = () => {
                     </div>
 
                     {/* Action Buttons Container */}
-                    <div className="mt-auto grid grid-cols-1 gap-3 pt-6 border-t border-slate-100">
+                    <div className="mt-auto grid grid-cols-1 gap-2.5 pt-4 border-t-2 border-slate-100">
                       <Link
                         to={`/election/${election._id}`}
-                        className="w-full text-center py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm rounded-2xl transition-all"
+                        className="w-full text-center py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm rounded-xl transition-all group/btn"
                       >
-                        বিস্তারিত দেখুন
+                        <span className="flex items-center justify-center gap-2">
+                          📄 বিস্তারিত দেখুন
+                          <svg
+                            className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2.5"
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </span>
                       </Link>
 
                       {election.status === "created" && (
                         <Link
                           to={`/apply/${election._id}`}
-                          className="w-full text-center py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm rounded-2xl shadow-lg shadow-blue-100 transition-all active:scale-95"
+                          className="w-full text-center py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-sm rounded-xl shadow-lg shadow-blue-200 hover:shadow-xl transition-all active:scale-95"
                         >
-                          প্রার্থী হিসাবে আবেদন
+                          <span className="flex items-center justify-center gap-2">
+                            ✍️ প্রার্থী হিসাবে আবেদন
+                          </span>
                         </Link>
                       )}
 
                       {election.status === "voting" && (
-                        <Link
-                          to={`/vote/${election._id}`}
-                          className="w-full text-center py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-2xl shadow-lg shadow-emerald-100 transition-all animate-bounce-subtle"
-                        >
-                          ভোট দিন (লাইভ)
-                        </Link>
+                        <>
+                          {user?.role === "admin" ||
+                          user?.role === "superadmin" ? (
+                            <div className="w-full text-center py-3.5 px-4 bg-gradient-to-r from-slate-400 to-slate-500 text-white font-black text-sm rounded-xl shadow-lg cursor-not-allowed">
+                              <span className="flex items-center justify-center gap-2">
+                                🔒 অ্যাডমিন ভোট দিতে পারবেন না
+                              </span>
+                            </div>
+                          ) : (
+                            <Link
+                              to={`/vote/${election._id}`}
+                              className="w-full text-center py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm rounded-xl shadow-lg shadow-emerald-200 hover:shadow-xl transition-all animate-pulse hover:animate-none"
+                            >
+                              <span className="flex items-center justify-center gap-2">
+                                🗳️ ভোট দিন (লাইভ)
+                              </span>
+                            </Link>
+                          )}
+                        </>
                       )}
 
                       {election.status === "completed" && (
                         <Link
                           to={`/results/${election._id}`}
-                          className="w-full text-center py-3.5 px-4 bg-slate-900 hover:bg-black text-white font-black text-sm rounded-2xl shadow-lg transition-all"
+                          className="w-full text-center py-3.5 px-4 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-black hover:to-slate-900 text-white font-black text-sm rounded-xl shadow-lg shadow-slate-300 hover:shadow-xl transition-all"
                         >
-                          ফলাফল দেখুন
+                          <span className="flex items-center justify-center gap-2">
+                            🏆 ফলাফল দেখুন
+                          </span>
                         </Link>
                       )}
                     </div>

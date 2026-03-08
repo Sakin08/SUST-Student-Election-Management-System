@@ -25,12 +25,22 @@ const VotingPage = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      // Check if user is admin - admins cannot vote
+      if (user?.role === "admin" || user?.role === "superadmin") {
+        setIsEligible(false);
+        setEligibilityMessage(
+          "অ্যাডমিনরা ভোট দিতে পারবেন না। আপনি শুধুমাত্র নির্বাচন পরিচালনা করতে পারবেন।",
+        );
+        setLoading(false);
+        return;
+      }
+
       await checkEligibility(); // Check eligibility first to get hall
       await fetchData(); // Then fetch data with hall info
     };
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [electionId]);
+  }, [electionId, user]);
 
   // Check voting time validity
   useEffect(() => {
@@ -451,136 +461,152 @@ const VotingPage = () => {
 
                 <div className="p-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-                    {positionCandidates.map((candidate) => {
-                      const isSelected =
-                        selectedVotes[position._id] === candidate._id;
+                    {positionCandidates.length === 0 ? (
+                      <div className="col-span-2 bg-slate-50 rounded-2xl p-12 text-center border-2 border-dashed border-slate-200">
+                        <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                          📭
+                        </div>
+                        <p className="text-slate-600 font-bold text-lg mb-2">
+                          এই পদে কোনো প্রার্থী নেই
+                        </p>
+                        <p className="text-slate-400 text-sm">
+                          এই পদের জন্য কোনো অনুমোদিত প্রার্থী পাওয়া যায়নি
+                        </p>
+                      </div>
+                    ) : (
+                      positionCandidates.map((candidate) => {
+                        const isSelected =
+                          selectedVotes[position._id] === candidate._id;
 
-                      return (
-                        <div
-                          key={candidate._id}
-                          onClick={() =>
-                            handleVote(position._id, candidate._id)
-                          }
-                          className={`relative p-6 rounded-3xl border-2 transition-all cursor-pointer group flex flex-col ${
-                            isSelected
-                              ? "border-blue-600 bg-blue-50/40 ring-4 ring-blue-100 shadow-lg"
-                              : "border-slate-200 bg-slate-50/50 hover:border-blue-300 hover:bg-white hover:shadow-md"
-                          }`}
-                        >
-                          {/* Selected Checkmark */}
-                          {isSelected && (
-                            <div className="absolute -top-3 -right-3 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-xl animate-in zoom-in border-4 border-white">
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="3"
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                            </div>
-                          )}
-
-                          {/* Candidate Photo and Info */}
-                          <div className="flex items-start gap-4 mb-4">
-                            {candidate.candidatePhoto ? (
-                              <div className="w-20 h-20 rounded-2xl overflow-hidden border-3 border-white shadow-lg flex-shrink-0 group-hover:scale-105 transition-transform">
-                                <img
-                                  src={candidate.candidatePhoto}
-                                  alt={candidate.studentId.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-black shadow-lg flex-shrink-0">
-                                {candidate.studentId.name?.charAt(0)}
+                        return (
+                          <div
+                            key={candidate._id}
+                            onClick={() =>
+                              handleVote(position._id, candidate._id)
+                            }
+                            className={`relative p-6 rounded-3xl border-2 transition-all cursor-pointer group flex flex-col ${
+                              isSelected
+                                ? "border-blue-600 bg-blue-50/40 ring-4 ring-blue-100 shadow-lg"
+                                : "border-slate-200 bg-slate-50/50 hover:border-blue-300 hover:bg-white hover:shadow-md"
+                            }`}
+                          >
+                            {/* Selected Checkmark */}
+                            {isSelected && (
+                              <div className="absolute -top-3 -right-3 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-xl animate-in zoom-in border-4 border-white">
+                                <svg
+                                  className="w-5 h-5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="3"
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
                               </div>
                             )}
-                            <div className="flex-1 min-w-0">
-                              <h3
-                                className={`text-lg font-black mb-2 transition-colors leading-tight ${isSelected ? "text-blue-700" : "text-slate-800"}`}
-                              >
-                                {candidate.studentId.name}
-                              </h3>
-                              <div className="space-y-1.5">
-                                <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-                                  <span className="text-blue-500">🆔</span>
-                                  {candidate.studentId.registrationNumber}
-                                </p>
-                                <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-                                  <span className="text-emerald-500">🎓</span>
-                                  {candidate.studentId.department}
-                                </p>
-                                {candidate.panelId && (
-                                  <p className="text-sm font-black text-blue-600 flex items-center gap-1.5 mt-2">
-                                    <span>🚩</span> {candidate.panelId.name}
+
+                            {/* Candidate Photo and Info */}
+                            <div className="flex items-start gap-4 mb-4">
+                              {candidate.candidatePhoto ? (
+                                <div className="w-20 h-20 rounded-2xl overflow-hidden border-3 border-white shadow-lg flex-shrink-0 group-hover:scale-105 transition-transform">
+                                  <img
+                                    src={candidate.candidatePhoto}
+                                    alt={candidate.studentId.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-black shadow-lg flex-shrink-0">
+                                  {candidate.studentId.name?.charAt(0)}
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h3
+                                  className={`text-lg font-black mb-2 transition-colors leading-tight ${isSelected ? "text-blue-700" : "text-slate-800"}`}
+                                >
+                                  {candidate.studentId.name}
+                                </h3>
+                                <div className="space-y-1.5">
+                                  <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                                    <span className="text-blue-500">🆔</span>
+                                    {candidate.studentId.registrationNumber}
                                   </p>
-                                )}
+                                  <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                                    <span className="text-emerald-500">🎓</span>
+                                    {candidate.studentId.department}
+                                  </p>
+                                  {candidate.panelId && (
+                                    <p className="text-sm font-black text-blue-600 flex items-center gap-1.5 mt-2">
+                                      <span>🚩</span> {candidate.panelId.name}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Manifesto */}
-                          <div className="mt-auto pt-4 border-t border-slate-200">
-                            <p className="text-xs text-slate-600 italic leading-relaxed line-clamp-3">
-                              "{candidate.manifesto}"
-                            </p>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCandidate(candidate);
-                              }}
-                              className="mt-3 w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors"
-                            >
-                              📄 বিস্তারিত দেখুন
-                            </button>
+                            {/* Manifesto */}
+                            <div className="mt-auto pt-4 border-t border-slate-200">
+                              <p className="text-xs text-slate-600 italic leading-relaxed line-clamp-3">
+                                "{candidate.manifesto}"
+                              </p>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCandidate(candidate);
+                                }}
+                                className="mt-3 w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors"
+                              >
+                                📄 বিস্তারিত দেখুন
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </div>
 
                   {/* Submission Row */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t-2 border-slate-100">
-                    <p className="text-sm font-medium text-slate-500">
-                      {!isVotingTimeValid
-                        ? "⏰ ভোটিং সময়ের বাইরে। এখন ভোট দেওয়া যাবে না।"
-                        : selectedVotes[position._id]
-                          ? "✅ প্রার্থী নির্বাচন করা হয়েছে। এখন ভোট নিশ্চিত করুন।"
-                          : "⚠️ ভোট প্রদানের জন্য একজন প্রার্থী নির্বাচন করুন।"}
-                    </p>
-                    <button
-                      onClick={() => submitVote(position._id)}
-                      disabled={
-                        !selectedVotes[position._id] || !isVotingTimeValid
-                      }
-                      className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 shadow-lg ${
-                        selectedVotes[position._id] && isVotingTimeValid
-                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 active:scale-95 shadow-blue-200"
-                          : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                      }`}
-                    >
-                      ভোট নিশ্চিত করুন
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                  {positionCandidates.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t-2 border-slate-100">
+                      <p className="text-sm font-medium text-slate-500">
+                        {!isVotingTimeValid
+                          ? "⏰ ভোটিং সময়ের বাইরে। এখন ভোট দেওয়া যাবে না।"
+                          : selectedVotes[position._id]
+                            ? "✅ প্রার্থী নির্বাচন করা হয়েছে। এখন ভোট নিশ্চিত করুন।"
+                            : "⚠️ ভোট প্রদানের জন্য একজন প্রার্থী নির্বাচন করুন।"}
+                      </p>
+                      <button
+                        onClick={() => submitVote(position._id)}
+                        disabled={
+                          !selectedVotes[position._id] || !isVotingTimeValid
+                        }
+                        className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 shadow-lg ${
+                          selectedVotes[position._id] && isVotingTimeValid
+                            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 active:scale-95 shadow-blue-200"
+                            : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                        }`}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="3"
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                        ভোট নিশ্চিত করুন
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="3"
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </section>
             );

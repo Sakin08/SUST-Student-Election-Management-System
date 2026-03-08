@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import CandidateDetailsModal from "./CandidateDetailsModal";
@@ -7,7 +7,10 @@ import VoterManagement from "../components/VoterManagement";
 
 const AdminDashboard = () => {
   const { user } = useContext(AuthContext);
-  const [activeTab, setActiveTab] = useState("elections");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get("tab") || "elections",
+  );
   const [elections, setElections] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -30,6 +33,23 @@ const AdminDashboard = () => {
     startTime: "",
     endTime: "",
   });
+
+  // Sync activeTab with URL parameter
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab");
+    if (
+      tabFromUrl &&
+      ["elections", "candidates", "voters", "audit"].includes(tabFromUrl)
+    ) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
+  // Update URL when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   // Debug: Log user role
   useEffect(() => {
@@ -324,7 +344,7 @@ const AdminDashboard = () => {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === tab.id
                   ? "bg-white text-blue-600 shadow-sm"

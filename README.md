@@ -23,28 +23,175 @@ A comprehensive election management system designed specifically for Shahjalal U
 
 ### 🔐 Authentication & Security
 
-- **Google OAuth 2.0** with SUST email validation
-- **JWT-based** authentication
-- **Role-based** access control (Student, Admin)
+- **Google OAuth 2.0** with SUST email validation (@student.sust.edu)
+- **JWT-based** authentication with secure token management
+- **Role-based** access control (Student, Admin, Super Admin)
 - Automatic profile extraction from email
+- Session management with secure cookies
+- Password-less authentication
 
 ### 🗳️ Election Management
 
-- **Two election types**: Hall Elections & Main Elections
-- **Hall-restricted voting** for hall-specific positions
-- **Panel-based** and independent candidacy
-- Complete **audit trail** for transparency
+#### Election Types
 
-### 👥 User Roles
+- **Main Elections**: University-wide student council elections
+- **Hall Elections**: Hall-specific council elections with hall restrictions
+- **Society Elections**: Department-specific society elections
+- **CR Elections**: Class Representative elections by department and batch
 
-- **Students**: Vote, apply as candidate, view results
-- **Admins**: Create elections, approve candidates, manage system
+#### Election Features
 
-### 🌐 User Interface
+- **Multi-position elections**: Create multiple positions in one election
+- **Panel-based candidacy**: Support for political panels with logos and descriptions
+- **Independent candidacy**: Students can run without panel affiliation
+- **Application fees**: Optional payment integration for candidate applications
+- **Voting time restrictions**: Set specific voting hours (HH:MM format)
+- **Real-time countdown**: Live countdown timer during voting period
+- **Voter eligibility management**: Upload and manage eligible voter lists
+- **Hall-based filtering**: Automatic filtering of positions and candidates by hall
 
-- **Full Bengali** language support
-- **Responsive design** (mobile, tablet, desktop)
-- Intuitive navigation and real-time updates
+### 👥 User Roles & Permissions
+
+#### Students
+
+- ✅ View eligible elections based on hall/department/batch
+- ✅ Apply as candidate with manifesto and photo
+- ✅ Upload candidate photo (Cloudinary integration)
+- ✅ Pay application fees via SSLCommerz (if required)
+- ✅ Cast votes during voting period
+- ✅ View election results and statistics
+- ✅ Track application status
+- ✅ Delete applications from completed elections
+- ✅ Update profile with hall selection
+- ❌ Cannot vote in elections they're not eligible for
+- ❌ Cannot apply for multiple positions in same election
+
+#### Admins
+
+- ✅ Create and manage all types of elections
+- ✅ Define positions with hall/department/batch restrictions
+- ✅ Create and manage panels
+- ✅ Approve or reject candidate applications
+- ✅ Manage voter eligibility lists (CSV upload)
+- ✅ Change election status (Created → Candidate Finalized → Voting → Completed)
+- ✅ Set voting time windows
+- ✅ View all elections without filtering
+- ✅ Access audit logs for transparency
+- ✅ View candidate details and manifestos
+- ❌ Cannot vote in any election
+- ❌ Cannot edit or delete elections (Super Admin only)
+
+#### Super Admins
+
+- ✅ All admin permissions
+- ✅ **Edit election details** (title, dates, fees, type)
+- ✅ **Delete elections** completely
+- ✅ Full system control
+- ❌ Cannot vote in any election
+
+### 🎨 User Interface
+
+- **Full Bengali (বাংলা) language support** throughout the system
+- **Modern, responsive design** with Tailwind CSS
+- **Gradient-based color schemes** for better visual hierarchy
+- **Real-time updates** and live status indicators
+- **Progress tracking** during voting
+- **Animated transitions** with Framer Motion
+- **Mobile-first approach** (works on all devices)
+- **Intuitive navigation** with persistent tab states
+- **Profile photo display** in navbar
+- **Status badges** with color coding
+- **Empty states** with helpful messages
+- **Loading states** for better UX
+
+### 📊 Voting System
+
+- **Secret ballot**: Anonymous voting with no vote tracking to voters
+- **One vote per position**: Prevents duplicate voting
+- **Real-time vote counting**: Instant result calculation
+- **Voting time enforcement**: Automatic time window validation
+- **Progress tracking**: Shows completed vs remaining positions
+- **Candidate details modal**: View full manifesto before voting
+- **Vote confirmation**: Clear feedback after successful vote
+- **Eligibility checks**: Multiple layers of voter validation
+- **Hall-based restrictions**: Automatic filtering for hall elections
+
+### 📈 Results & Analytics
+
+- **Real-time results**: Instant calculation after voting ends
+- **Winner determination**: Automatic winner identification (handles ties)
+- **Vote percentage**: Shows vote distribution
+- **Ranking system**: Candidates ranked by vote count
+- **PDF export**: Download results with Bangla support (optimized file size)
+- **Visual presentation**: Color-coded winner highlighting
+- **Candidate photos**: Display in results
+- **Panel information**: Show panel affiliation in results
+
+### 💳 Payment Integration
+
+- **SSLCommerz integration**: Secure payment gateway for Bangladesh
+- **Application fee collection**: Optional fees for candidate applications
+- **Payment verification**: Automatic payment status checking
+- **Payment history**: Track all transactions
+- **Auto-submission**: Automatic application submission after successful payment
+- **Payment recovery**: Resume application after payment completion
+
+### 📸 Media Management
+
+- **Cloudinary integration**: Cloud-based image storage
+- **Candidate photo upload**: Support for candidate profile pictures
+- **Image optimization**: Automatic compression and resizing
+- **Secure URLs**: CDN-delivered images
+- **Profile photos**: User profile picture support
+
+### 🔍 Admin Tools
+
+- **Comprehensive dashboard**: 4-tab interface (Elections, Candidates, Voters, Audit)
+- **Tab persistence**: URL-based tab state (survives page refresh)
+- **Candidate approval workflow**: Review and approve/reject applications
+- **Voter management**: Upload CSV, add individual voters, bulk operations
+- **Audit logging**: Complete action history with timestamps
+- **Election editing**: Modify election details (Super Admin only)
+- **Status management**: Control election lifecycle
+- **Voting time setup**: Configure voting windows
+
+### 📋 Audit & Transparency
+
+- **Complete audit trail**: All admin actions logged
+- **Timestamped records**: When and who performed actions
+- **Action details**: What was changed
+- **Election-specific logs**: Filter by election
+- **Admin identification**: Track which admin made changes
+- **Immutable logs**: Cannot be deleted or modified
+
+### 🛡️ Security Features
+
+- ✅ OAuth 2.0 authentication
+- ✅ JWT token-based authorization
+- ✅ Role-based access control (RBAC)
+- ✅ Hall/department/batch restriction enforcement
+- ✅ Duplicate vote prevention
+- ✅ Admin voting prevention
+- ✅ Complete audit logging
+- ✅ Input validation & sanitization
+- ✅ Secure file uploads
+- ✅ Payment verification
+- ✅ Session management
+- ✅ CORS protection
+- ✅ Environment variable security
+
+### 🎯 Additional Features
+
+- **Candidate profile page**: View all applications with status
+- **Application deletion**: Remove applications from completed elections
+- **Election details page**: Comprehensive election information
+- **Countdown timers**: Real-time countdown to voting end
+- **Status indicators**: Visual election status badges
+- **Responsive cards**: Modern card-based UI with gradients
+- **Search and filter**: Easy navigation through elections
+- **Error handling**: User-friendly error messages in Bangla
+- **Loading states**: Smooth loading animations
+- **Empty states**: Helpful messages when no data available
 
 ## 🚀 Tech Stack
 
