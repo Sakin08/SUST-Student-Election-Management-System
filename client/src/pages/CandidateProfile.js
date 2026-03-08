@@ -7,6 +7,7 @@ const CandidateProfile = () => {
   const { user } = useContext(AuthContext);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     fetchApplications();
@@ -22,6 +23,32 @@ const CandidateProfile = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteApplication = async (applicationId, electionTitle) => {
+    if (
+      !window.confirm(
+        `আপনি কি নিশ্চিত "${electionTitle}" নির্বাচনের আবেদন মুছে ফেলতে চান?`,
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(applicationId);
+    try {
+      await axios.delete(
+        `http://localhost:5001/api/candidates/${applicationId}`,
+      );
+      alert("আবেদন সফলভাবে মুছে ফেলা হয়েছে");
+      fetchApplications(); // Refresh the list
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+          "আবেদন মুছতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।",
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -277,6 +304,53 @@ const CandidateProfile = () => {
                         </span>
                       )}
                     </div>
+
+                    {/* Delete Button - Only for completed elections */}
+                    {application.electionId?.status === "completed" && (
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <button
+                          onClick={() =>
+                            handleDeleteApplication(
+                              application._id,
+                              application.electionId?.title,
+                            )
+                          }
+                          disabled={deletingId === application._id}
+                          className={`w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                            deletingId === application._id
+                              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                              : "bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border-2 border-rose-200"
+                          }`}
+                        >
+                          {deletingId === application._id ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                              মুছে ফেলা হচ্ছে...
+                            </>
+                          ) : (
+                            <>
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                              আবেদন মুছে ফেলুন
+                            </>
+                          )}
+                        </button>
+                        <p className="text-xs text-slate-400 text-center mt-2">
+                          নির্বাচন সম্পন্ন হয়েছে - আবেদন মুছে ফেলা যাবে
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

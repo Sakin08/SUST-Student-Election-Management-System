@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 const Results = () => {
   const { electionId } = useParams();
@@ -10,6 +10,8 @@ const Results = () => {
   const [positions, setPositions] = useState([]);
   const [election, setElection] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const printRef = useRef();
 
   useEffect(() => {
     fetchResults();
@@ -41,164 +43,91 @@ const Results = () => {
       .sort((a, b) => b.voteCount - a.voteCount);
   };
 
-  const downloadPDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+  const downloadPDF = async () => {
+    if (!printRef.current) return;
 
-    // Title
-    doc.setFontSize(20);
-    doc.setFont(undefined, "bold");
-    doc.text("Election Results", pageWidth / 2, 20, { align: "center" });
+    setIsGeneratingPDF(true);
 
-    // Election Name
-    if (election) {
-      doc.setFontSize(14);
-      doc.setFont(undefined, "normal");
-      doc.text(election.title, pageWidth / 2, 30, { align: "center" });
-
-      // Date
-      doc.setFontSize(10);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth / 2, 37, {
-        align: "center",
+    try {
+      // Create a clone of the element to modify for PDF
+      const element = printRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 1.5, // Reduced from 2 to 1.5 for smaller file size
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
       });
-    }
 
-    let yPosition = 50;
+      const imgData = canvas.toDataURL("image/jpeg", 0.85); // Use JPEG with 85% quality instead of PNG
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true, // Enable PDF compression
+      });
 
-    // Loop through each position
-    positions.forEach((position, posIndex) => {
-      const positionResults = getResultsByPosition(position._id);
-      const totalVotes = positionResults.reduce(
-        (acc, curr) => acc + curr.voteCount,
-        0,
-      );
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10;
 
-      // Check if we need a new page
-      if (yPosition > 250) {
-        doc.addPage();
-        yPosition = 20;
+      // Calculate how many pages we need
+      const pageHeight = pdfHeight - 20; // Leave margin
+      const totalPages = Math.ceil((imgHeight * ratio) / pageHeight);
+
+      for (let i = 0; i < totalPages; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        const sourceY = (i * pageHeight) / ratio;
+        const sourceHeight = Math.min(pageHeight / ratio, imgHeight - sourceY);
+
+        // Create a temporary canvas for this page
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = imgWidth;
+        pageCanvas.height = sourceHeight;
+        const pageCtx = pageCanvas.getContext("2d");
+
+        pageCtx.drawImage(
+          canvas,
+          0,
+          sourceY,
+          imgWidth,
+          sourceHeight,
+          0,
+          0,
+          imgWidth,
+          sourceHeight,
+        );
+
+        const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.85); // Use JPEG with 85% quality
+        pdf.addImage(
+          pageImgData,
+          "JPEG",
+          imgX,
+          imgY,
+          imgWidth * ratio,
+          sourceHeight * ratio,
+          undefined,
+          "FAST", // Use FAST compression
+        );
       }
 
-      // Position Title
-      doc.setFontSize(14);
-      doc.setFont(undefined, "bold");
-      doc.text(`${posIndex + 1}. ${position.title}`, 14, yPosition);
-      yPosition += 7;
-
-      // Position Type
-      doc.setFontSize(9);
-      doc.setFont(undefined, "normal");
-      doc.text(
-        position.isHallSpecific ? "Hall-Specific Position" : "General Position",
-        14,
-        yPosition,
-      );
-      yPosition += 5;
-
-      // Total Votes
-      doc.text(`Total Votes: ${totalVotes}`, 14, yPosition);
-      yPosition += 10;
-
-      if (positionResults.length === 0) {
-        doc.setFont(undefined, "italic");
-        doc.text("No votes received for this position", 20, yPosition);
-        yPosition += 15;
-      } else {
-        // Find highest vote count for winner determination
-        const highestVoteCount = positionResults[0]?.voteCount || 0;
-
-        // Create table data
-        const tableData = positionResults.map((result, index) => {
-          const votePercentage =
-            totalVotes > 0
-              ? ((result.voteCount / totalVotes) * 100).toFixed(1)
-              : 0;
-
-          // Mark as winner if vote count equals highest (handles ties)
-          const isWinner =
-            result.voteCount === highestVoteCount && highestVoteCount > 0;
-
-          return [
-            index + 1,
-            result.studentId?.name || "N/A",
-            result.studentId?.registrationNumber || "N/A",
-            result.panelId?.name || "Independent",
-            result.voteCount,
-            `${votePercentage}%`,
-            isWinner ? "WINNER" : "",
-          ];
-        });
-
-        // Add table
-        autoTable(doc, {
-          startY: yPosition,
-          head: [["Rank", "Name", "Reg. No.", "Panel", "Votes", "%", "Status"]],
-          body: tableData,
-          theme: "grid",
-          headStyles: {
-            fillColor: [51, 51, 51],
-            textColor: [255, 255, 255],
-            fontStyle: "bold",
-            fontSize: 9,
-          },
-          bodyStyles: {
-            fontSize: 8,
-          },
-          columnStyles: {
-            0: { cellWidth: 15, halign: "center" },
-            1: { cellWidth: 45 },
-            2: { cellWidth: 30 },
-            3: { cellWidth: 35 },
-            4: { cellWidth: 20, halign: "center" },
-            5: { cellWidth: 20, halign: "center" },
-            6: { cellWidth: 25, halign: "center", fontStyle: "bold" },
-          },
-          didParseCell: function (data) {
-            // Highlight winner rows (handles ties - all rows with "WINNER" status)
-            if (data.section === "body" && data.column.index === 6) {
-              const cellValue = data.cell.raw;
-              if (cellValue === "WINNER") {
-                // Highlight entire row for winners
-                const rowCells = data.table.body[data.row.index].cells;
-                rowCells.forEach((cell) => {
-                  cell.styles.fillColor = [255, 251, 235]; // Light yellow
-                  cell.styles.textColor = [180, 83, 9]; // Amber text
-                });
-              }
-            }
-          },
-          margin: { left: 14, right: 14 },
-        });
-
-        yPosition = doc.lastAutoTable.finalY + 15;
-      }
-    });
-
-    // Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setFont(undefined, "normal");
-      doc.text(
-        `Page ${i} of ${pageCount}`,
-        pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: "center" },
-      );
-      doc.text(
-        "SUST Election Management System",
-        pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 5,
-        { align: "center" },
-      );
+      // Save PDF
+      const fileName = election
+        ? `${election.title.replace(/\s+/g, "_")}_Results.pdf`
+        : "Election_Results.pdf";
+      pdf.save(fileName);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("PDF তৈরি করতে সমস্যা হয়েছে");
+    } finally {
+      setIsGeneratingPDF(false);
     }
-
-    // Save PDF
-    const fileName = election
-      ? `${election.title.replace(/\s+/g, "_")}_Results.pdf`
-      : "Election_Results.pdf";
-    doc.save(fileName);
   };
 
   if (loading) {
@@ -280,28 +209,42 @@ const Results = () => {
             {/* Download PDF Button */}
             <button
               onClick={downloadPDF}
-              className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-black text-sm shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-95"
+              disabled={isGeneratingPDF}
+              className={`inline-flex items-center gap-3 px-6 py-3 rounded-full font-black text-sm shadow-lg hover:shadow-xl transition-all active:scale-95 ${
+                isGeneratingPDF
+                  ? "bg-slate-400 text-slate-200 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+              }`}
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              PDF ডাউনলোড করুন
+              {isGeneratingPDF ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  PDF তৈরি হচ্ছে...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  PDF ডাউনলোড করুন
+                </>
+              )}
             </button>
           </div>
         </div>
 
         {/* Results by Position */}
-        <div className="space-y-10">
+        <div ref={printRef} className="space-y-10">
           {positions.map((position, posIndex) => {
             const positionResults = getResultsByPosition(position._id);
             const totalVotes = positionResults.reduce(

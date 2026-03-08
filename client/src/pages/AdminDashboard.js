@@ -75,9 +75,11 @@ const AdminDashboard = () => {
   const fetchElections = async () => {
     try {
       const res = await axios.get("http://localhost:5001/api/elections");
+      console.log("Admin fetched all elections:", res.data.length, "elections");
       setElections(res.data);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching elections:", error);
+      alert("নির্বাচন লোড করতে সমস্যা হয়েছে");
     }
   };
 
@@ -339,9 +341,14 @@ const AdminDashboard = () => {
           {activeTab === "elections" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-slate-800">
-                  নির্বাচন তালিকা
-                </h2>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">
+                    নির্বাচন তালিকা
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    সকল নির্বাচন দেখছেন ({elections.length} টি)
+                  </p>
+                </div>
                 <Link
                   to="/create-election"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-200 flex items-center gap-2"

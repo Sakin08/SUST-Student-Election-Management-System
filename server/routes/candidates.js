@@ -281,4 +281,36 @@ router.put("/:id/status", protect, adminOnly, async (req, res) => {
   }
 });
 
+// Delete candidate application (Student can delete their own application for ended elections)
+router.delete("/:id", protect, async (req, res) => {
+  try {
+    const candidate = await Candidate.findById(req.params.id).populate(
+      "electionId",
+    );
+
+    if (!candidate) {
+      return res.status(404).json({ message: "আবেদন পাওয়া যায়নি" });
+    }
+
+    // Check if the user owns this application
+    if (candidate.studentId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "আপনি এই আবেদন মুছতে পারবেন না" });
+    }
+
+    // Check if election is completed
+    if (candidate.electionId.status !== "completed") {
+      return res.status(400).json({
+        message: "শুধুমাত্র সম্পন্ন নির্বাচনের আবেদন মুছে ফেলা যাবে",
+      });
+    }
+
+    await Candidate.findByIdAndDelete(req.params.id);
+
+    res.json({ message: "আবেদন সফলভাবে মুছে ফেলা হয়েছে" });
+  } catch (error) {
+    console.error("Error deleting candidate:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
