@@ -48,7 +48,8 @@ require("./config/passport")(passport);
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "success",
-    message: "API is running",
+    message: "✅ API working great! Deployment successful",
+    environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
   });
 });
