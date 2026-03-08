@@ -7,6 +7,7 @@ import VotingCountdown from "../components/VotingCountdown";
 const StudentDashboard = () => {
   const { user } = useContext(AuthContext);
   const [elections, setElections] = useState([]);
+  const [electionsWithHall, setElectionsWithHall] = useState([]); // Store elections with hall info
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,40 +24,78 @@ const StudentDashboard = () => {
       console.log("User department:", user?.department);
       console.log("User batch:", user?.batch);
 
-      // Filter elections: show all main/hall elections, but only society/CR elections for user's department/batch
-      const filteredElections = res.data.filter((election) => {
-        if (election.type === "society") {
-          console.log(
-            "Society election:",
-            election.title,
-            "Department:",
-            election.department,
-            "Match:",
-            election.department === user?.department,
-          );
-          return election.department === user?.department;
-        }
-        if (election.type === "cr") {
-          console.log(
-            "CR election:",
-            election.title,
-            "Department:",
-            election.department,
-            "Batch:",
-            election.batch,
-            "Match:",
-            election.department === user?.department &&
-              election.batch === user?.batch,
-          );
-          return (
-            election.department === user?.department &&
-            election.batch === user?.batch
-          );
-        }
-        return true; // Show all main and hall elections
-      });
-      console.log("Filtered elections:", filteredElections);
+      // Filter elections based on type and eligibility
+      const eligibilityChecks = await Promise.all(
+        res.data.map(async (election) => {
+          // For hall elections, check if user is in eligible voters list
+          if (election.type === "hall") {
+            try {
+              const eligibilityRes = await axios.get(
+                `http://localhost:5001/api/eligible-voters/${election._id}/check-eligibility`,
+              );
+              return {
+                election,
+                show: eligibilityRes.data.eligible,
+                voterHall: eligibilityRes.data.hall || null, // Store hall from admin input
+              };
+            } catch (error) {
+              console.error("Eligibility check error:", error);
+              return { election, show: false, voterHall: null }; // Don't show if check fails
+            }
+          }
+
+          // For society elections, check department match
+          if (election.type === "society") {
+            console.log(
+              "Society election:",
+              election.title,
+              "Department:",
+              election.department,
+              "Match:",
+              election.department === user?.department,
+            );
+            return {
+              election,
+              show: election.department === user?.department,
+              voterHall: null,
+            };
+          }
+
+          // For CR elections, check department and batch match
+          if (election.type === "cr") {
+            console.log(
+              "CR election:",
+              election.title,
+              "Department:",
+              election.department,
+              "Batch:",
+              election.batch,
+              "Match:",
+              election.department === user?.department &&
+                election.batch === user?.batch,
+            );
+            return {
+              election,
+              show:
+                election.department === user?.department &&
+                election.batch === user?.batch,
+              voterHall: null,
+            };
+          }
+
+          // Show all main elections
+          return { election, show: true, voterHall: null };
+        }),
+      );
+
+      const filteredData = eligibilityChecks.filter((item) => item.show);
+      const filteredElections = filteredData.map((item) => item.election);
+
+      // Store elections with hall info
+      setElectionsWithHall(filteredData);
       setElections(filteredElections);
+
+      console.log("Filtered elections:", filteredElections);
     } catch (error) {
       console.error(error);
     } finally {
@@ -136,7 +175,9 @@ const StudentDashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {elections.map((election) => {
+            {electionsWithHall.map((item) => {
+              const election = item.election;
+              const voterHall = item.voterHall;
               const { color, label } = getStatusConfig(election.status);
 
               return (
@@ -170,6 +211,47 @@ const StudentDashboard = () => {
                     </h3>
 
                     <div className="space-y-3 mb-8 text-sm font-bold text-slate-500">
+                      {election.type === "hall" && (
+                        <>
+                          {election.hall && (
+                            <div className="flex items-center gap-2 text-indigo-600">
+                              <span className="text-indigo-400">🏢</span>{" "}
+                              {election.hall === "SPH"
+                                ? "Shah Paran Hall"
+                                : election.hall === "B24H"
+                                  ? "Bijoy 24 Hall"
+                                  : election.hall === "SMAH"
+                                    ? "Syed Mujtaba Ali Hall"
+                                    : election.hall === "ASH"
+                                      ? "Ayesha Siddiqa Hall"
+                                      : election.hall === "BSCH"
+                                        ? "Begum Sirajunnesa Chowdhury Hall"
+                                        : election.hall === "FTZH"
+                                          ? "Fatimah Tuz Zahra Hall"
+                                          : election.hall}
+                            </div>
+                          )}
+                          {voterHall && (
+                            <div className="flex items-center gap-2 text-emerald-600">
+                              <span className="text-emerald-400">✓</span> আপনি
+                              যোগ্য:{" "}
+                              {voterHall === "SPH"
+                                ? "Shah Paran Hall"
+                                : voterHall === "B24H"
+                                  ? "Bijoy 24 Hall"
+                                  : voterHall === "SMAH"
+                                    ? "Syed Mujtaba Ali Hall"
+                                    : voterHall === "ASH"
+                                      ? "Ayesha Siddiqa Hall"
+                                      : voterHall === "BSCH"
+                                        ? "Begum Sirajunnesa Chowdhury Hall"
+                                        : voterHall === "FTZH"
+                                          ? "Fatimah Tuz Zahra Hall"
+                                          : voterHall}
+                            </div>
+                          )}
+                        </>
+                      )}
                       {election.type === "society" && election.department && (
                         <div className="flex items-center gap-2 text-blue-600">
                           <span className="text-blue-400">🏛️</span>{" "}

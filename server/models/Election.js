@@ -17,6 +17,19 @@ const electionSchema = new mongoose.Schema(
     endDate: { type: Date, required: true },
     votingStartTime: { type: String }, // Time when voting starts (HH:MM format)
     votingEndTime: { type: String }, // Time when voting ends (HH:MM format)
+    voterListType: {
+      type: String,
+      enum: ["all", "specific"],
+      default: "all",
+    },
+    eligibleVoters: [
+      {
+        registrationNumber: String,
+        hall: String, // For hall elections
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        addedAt: { type: Date, default: Date.now },
+      },
+    ],
     status: {
       type: String,
       enum: ["created", "candidateFinalized", "voting", "completed"],

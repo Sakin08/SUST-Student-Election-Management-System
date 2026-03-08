@@ -25,7 +25,9 @@ const CreateElection = () => {
     },
   ]);
 
-  const [panels, setPanels] = useState([{ name: "", description: "" }]);
+  const [panels, setPanels] = useState([
+    { name: "", hall: "", description: "" },
+  ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // When election type changes, update all positions' isHallSpecific/isDepartmentSpecific/isBatchSpecific
@@ -78,7 +80,13 @@ const CreateElection = () => {
     const isBatchSpecific = formData.type === "cr";
     setPositions([
       ...positions,
-      { title: "", isHallSpecific, isDepartmentSpecific, isBatchSpecific },
+      {
+        title: "",
+        hall: "",
+        isHallSpecific,
+        isDepartmentSpecific,
+        isBatchSpecific,
+      },
     ]);
   };
 
@@ -118,28 +126,42 @@ const CreateElection = () => {
       );
       const electionId = electionRes.data._id;
 
-      // Create positions
+      // Create positions - each position has its own hall field for hall elections
       const positionPromises = positions
         .filter((p) => p.title.trim())
-        .map((position) =>
-          axios.post(`${API_URL}/api/positions`, {
+        .map((position) => {
+          const positionData = {
             ...position,
             electionId,
             maxWinners: 1,
-          }),
-        );
+          };
 
-      // Create panels (skip for society and CR elections)
+          // For hall elections, add hall field to each position
+          if (formData.type === "hall" && formData.hall) {
+            positionData.hall = formData.hall;
+          }
+
+          return axios.post(`${API_URL}/api/positions`, positionData);
+        });
+
+      // Create panels - each panel has its own hall field for hall elections
       const panelPromises =
         formData.type !== "society" && formData.type !== "cr"
           ? panels
               .filter((p) => p.name.trim())
-              .map((panel) =>
-                axios.post(`${API_URL}/api/panels`, {
+              .map((panel) => {
+                const panelData = {
                   ...panel,
                   electionId,
-                }),
-              )
+                };
+
+                // For hall elections, add hall field to each panel
+                if (formData.type === "hall" && formData.hall) {
+                  panelData.hall = formData.hall;
+                }
+
+                return axios.post(`${API_URL}/api/panels`, panelData);
+              })
           : [];
 
       await Promise.all([...positionPromises, ...panelPromises]);
@@ -149,7 +171,9 @@ const CreateElection = () => {
           ? "সোসাইটি নির্বাচন এবং পদ সফলভাবে তৈরি হয়েছে!"
           : formData.type === "cr"
             ? "CR নির্বাচন এবং পদ সফলভাবে তৈরি হয়েছে!"
-            : "নির্বাচন, পদ এবং প্যানেল সফলভাবে তৈরি হয়েছে!";
+            : formData.type === "hall"
+              ? `${formData.hall} হল নির্বাচন, পদ এবং প্যানেল সফলভাবে তৈরি হয়েছে!`
+              : "নির্বাচন, পদ এবং প্যানেল সফলভাবে তৈরি হয়েছে!";
       alert(successMessage);
       navigate("/");
     } catch (error) {
@@ -252,12 +276,40 @@ const CreateElection = () => {
                     {formData.type === "main"
                       ? "সকল ছাত্রদের জন্য কেন্দ্রীয় নির্বাচন"
                       : formData.type === "hall"
-                        ? "প্রতিটি হলের জন্য আলাদা নির্বাচন (সব পদ হল-নির্দিষ্ট)"
+                        ? "একটি নির্দিষ্ট হলের জন্য নির্বাচন (সব পদ ও প্যানেল হল-নির্দিষ্ট)"
                         : formData.type === "society"
                           ? "একটি নির্দিষ্ট বিভাগের জন্য নির্বাচন (প্যানেল নেই)"
                           : "একটি নির্দিষ্ট বিভাগ ও ব্যাচের জন্য CR নির্বাচন (প্যানেল নেই)"}
                   </p>
                 </div>
+
+                {formData.type === "hall" && (
+                  <div>
+                    <label className="text-sm font-bold text-slate-700 block mb-2">
+                      হল <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      value={formData.hall}
+                      onChange={(e) =>
+                        setFormData({ ...formData, hall: e.target.value })
+                      }
+                      required
+                    >
+                      <option value="">হল নির্বাচন করুন</option>
+                      <option value="SPH">Shah Paran Hall (SPH)</option>
+                      <option value="B24H">Bijoy 24 Hall (B24H)</option>
+                      <option value="SMAH">Syed Mujtaba Ali Hall (SMAH)</option>
+                      <option value="ASH">Ayesha Siddiqa Hall (ASH)</option>
+                      <option value="BSCH">
+                        Begum Sirajunnesa Chowdhury Hall (BSCH)
+                      </option>
+                      <option value="FTZH">
+                        Fatimah Tuz Zahra Hall (FTZH)
+                      </option>
+                    </select>
+                  </div>
+                )}
 
                 {(formData.type === "society" || formData.type === "cr") && (
                   <div>

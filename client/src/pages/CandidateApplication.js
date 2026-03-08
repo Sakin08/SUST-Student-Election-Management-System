@@ -26,9 +26,28 @@ const CandidateApplication = () => {
   const [paymentAmount, setPaymentAmount] = useState(0);
   const shouldAutoSubmitRef = useRef(false);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
+  const [voterHall, setVoterHall] = useState(null); // Hall from admin's eligible voters list
 
   useEffect(() => {
-    fetchData();
+    const loadData = async () => {
+      // Check eligibility first to get hall from admin input
+      try {
+        const response = await axios.get(
+          `http://localhost:5001/api/eligible-voters/${electionId}/check-eligibility`,
+        );
+        if (response.data.hall) {
+          setVoterHall(response.data.hall);
+          console.log("Voter hall from admin input:", response.data.hall);
+        }
+      } catch (error) {
+        console.error("Eligibility check error:", error);
+      }
+
+      // Then fetch election data
+      await fetchData();
+    };
+
+    loadData();
 
     // Check if there's a completed payment
     const completedPaymentId = localStorage.getItem("completedPaymentId");
@@ -105,8 +124,27 @@ const CandidateApplication = () => {
         axios.get(`http://localhost:5001/api/panels/election/${electionId}`),
       ]);
       setElection(elecRes.data);
-      setPositions(posRes.data);
-      setPanels(panelRes.data);
+
+      // For hall elections, filter positions and panels by voter's hall from admin input
+      if (elecRes.data.type === "hall" && voterHall) {
+        const filteredPositions = posRes.data.filter(
+          (pos) => pos.hall === voterHall,
+        );
+        const filteredPanels = panelRes.data.filter(
+          (panel) => panel.hall === voterHall,
+        );
+        setPositions(filteredPositions);
+        setPanels(filteredPanels);
+        console.log(
+          `Filtered positions for hall ${voterHall}:`,
+          filteredPositions,
+        );
+        console.log(`Filtered panels for hall ${voterHall}:`, filteredPanels);
+      } else {
+        setPositions(posRes.data);
+        setPanels(panelRes.data);
+      }
+
       console.log("Election data:", elecRes.data);
       console.log("Application fee:", elecRes.data.applicationFee);
 
@@ -451,8 +489,8 @@ const CandidateApplication = () => {
               </select>
             </div>
 
-            {/* Panel Select - Hide for society elections */}
-            {election?.type !== "society" && (
+            {/* Panel Select - Hide for society and CR elections */}
+            {election?.type !== "society" && election?.type !== "cr" && (
               <div className="group">
                 <label className="block text-sm font-bold text-slate-700 mb-3 group-focus-within:text-blue-600 transition-colors">
                   প্যানেল (ঐচ্ছিক)

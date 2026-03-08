@@ -8,6 +8,7 @@ const positionSchema = new mongoose.Schema(
       required: true,
     },
     title: { type: String, required: true },
+    hall: { type: String }, // For hall elections - which hall this position belongs to (SPH, SMAH, etc.)
     maxWinners: { type: Number, default: 1 },
     isHallSpecific: { type: Boolean, default: false },
     // If isHallSpecific is true, candidates can only apply from their own hall

@@ -8,6 +8,7 @@ const panelSchema = new mongoose.Schema(
       required: true,
     },
     name: { type: String, required: true },
+    hall: { type: String }, // For hall elections - which hall this panel belongs to (SPH, SMAH, etc.)
     description: String,
     logo: String,
   },

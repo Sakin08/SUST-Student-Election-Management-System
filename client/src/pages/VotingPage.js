@@ -19,9 +19,16 @@ const VotingPage = () => {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isVotingTimeValid, setIsVotingTimeValid] = useState(true);
   const [votingTimeMessage, setVotingTimeMessage] = useState("");
+  const [isEligible, setIsEligible] = useState(true);
+  const [eligibilityMessage, setEligibilityMessage] = useState("");
+  const [voterHall, setVoterHall] = useState(null); // Hall from admin's eligible voters list
 
   useEffect(() => {
-    fetchData();
+    const loadData = async () => {
+      await checkEligibility(); // Check eligibility first to get hall
+      await fetchData(); // Then fetch data with hall info
+    };
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [electionId]);
 
@@ -72,6 +79,25 @@ const VotingPage = () => {
     return () => clearInterval(interval);
   }, [election]);
 
+  const checkEligibility = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5001/api/eligible-voters/${electionId}/check-eligibility`,
+      );
+      setIsEligible(response.data.eligible);
+      setEligibilityMessage(response.data.reason);
+      // Store the hall from admin's input (if provided)
+      if (response.data.hall) {
+        setVoterHall(response.data.hall);
+        console.log("Voter hall from admin input:", response.data.hall);
+      }
+    } catch (error) {
+      console.error("Eligibility check error:", error);
+      // If error, assume eligible (fail-open for backward compatibility)
+      setIsEligible(true);
+    }
+  };
+
   const fetchData = async () => {
     try {
       const [elecRes, posRes, candRes] = await Promise.all([
@@ -82,7 +108,18 @@ const VotingPage = () => {
         ),
       ]);
       setElection(elecRes.data);
-      setAllPositions(posRes.data);
+
+      // For hall elections, filter positions by voter's hall from admin input
+      let filteredPositions = posRes.data;
+      if (elecRes.data.type === "hall" && voterHall) {
+        filteredPositions = posRes.data.filter((pos) => pos.hall === voterHall);
+        console.log(
+          `Filtered positions for hall ${voterHall}:`,
+          filteredPositions,
+        );
+      }
+
+      setAllPositions(filteredPositions);
 
       // Check which positions user has already voted for
       try {
@@ -94,17 +131,31 @@ const VotingPage = () => {
         );
 
         // Filter out positions that user has already voted for
-        const availablePositions = posRes.data.filter(
+        const availablePositions = filteredPositions.filter(
           (pos) => !votedPositionIds.includes(pos._id),
         );
         setPositions(availablePositions);
         setVotedPositions(votedPositionIds);
       } catch (error) {
         console.error("Error fetching user votes:", error);
-        setPositions(posRes.data);
+        setPositions(filteredPositions);
       }
 
-      setCandidates(candRes.data.filter((c) => c.status === "approved"));
+      // For hall elections, also filter candidates by voter's hall
+      let filteredCandidates = candRes.data.filter(
+        (c) => c.status === "approved",
+      );
+      if (elecRes.data.type === "hall" && voterHall) {
+        filteredCandidates = filteredCandidates.filter(
+          (c) => c.hall === voterHall,
+        );
+        console.log(
+          `Filtered candidates for hall ${voterHall}:`,
+          filteredCandidates,
+        );
+      }
+
+      setCandidates(filteredCandidates);
     } catch (error) {
       console.error(error);
     } finally {
@@ -117,6 +168,20 @@ const VotingPage = () => {
   };
 
   const submitVote = async (positionId) => {
+    // Check eligibility first
+    if (!isEligible) {
+      setMessage("❌ আপনি এই নির্বাচনে ভোট দেওয়ার যোগ্য নন");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+
+    // Check voting time
+    if (!isVotingTimeValid) {
+      setMessage("❌ ভোটিং সময়ের বাইরে");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+
     const candidateId = selectedVotes[positionId];
     if (!candidateId) {
       setMessage("দয়া করে একজন প্রার্থী নির্বাচন করুন");
@@ -163,6 +228,27 @@ const VotingPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 md:px-8">
       <div className="max-w-5xl mx-auto">
+        {/* Eligibility Check Warning */}
+        {!isEligible && (
+          <div className="mb-8 p-6 rounded-2xl bg-rose-50 border-2 border-rose-200 flex items-start gap-4 shadow-lg">
+            <div className="w-12 h-12 bg-rose-500 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0">
+              🚫
+            </div>
+            <div>
+              <p className="text-rose-800 font-black text-lg mb-2">
+                ভোট দেওয়ার যোগ্যতা নেই
+              </p>
+              <p className="text-rose-600 text-sm mb-2">{eligibilityMessage}</p>
+              <p className="text-rose-500 text-xs">
+                আপনার রেজিস্ট্রেশন: {user?.registrationNumber}
+              </p>
+              <p className="text-rose-500 text-xs mt-1">
+                আরও তথ্যের জন্য নির্বাচন কমিশনের সাথে যোগাযোগ করুন।
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Voting Time Restriction Warning */}
         {!isVotingTimeValid && (
           <div className="mb-8 p-6 rounded-2xl bg-amber-50 border-2 border-amber-200 flex items-start gap-4 shadow-lg">

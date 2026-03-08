@@ -6,11 +6,12 @@ const { protect, adminOnly } = require("../middleware/auth");
 // Create panel (Admin only)
 router.post("/", protect, adminOnly, async (req, res) => {
   try {
-    const { electionId, name, description, logo } = req.body;
+    const { electionId, name, hall, description, logo } = req.body;
 
     const panel = await Panel.create({
       electionId,
       name,
+      hall,
       description,
       logo,
     });

@@ -6,13 +6,24 @@ const { protect, adminOnly } = require("../middleware/auth");
 // Create position (Admin only)
 router.post("/", protect, adminOnly, async (req, res) => {
   try {
-    const { electionId, title, maxWinners, isHallSpecific } = req.body;
+    const {
+      electionId,
+      title,
+      hall,
+      maxWinners,
+      isHallSpecific,
+      isDepartmentSpecific,
+      isBatchSpecific,
+    } = req.body;
 
     const position = await Position.create({
       electionId,
       title,
+      hall,
       maxWinners,
       isHallSpecific,
+      isDepartmentSpecific,
+      isBatchSpecific,
     });
 
     res.status(201).json(position);

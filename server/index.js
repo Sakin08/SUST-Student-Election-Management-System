@@ -36,6 +36,7 @@ app.use("/api/candidates", require("./routes/candidates"));
 app.use("/api/votes", require("./routes/votes"));
 app.use("/api/audit", require("./routes/audit"));
 app.use("/api/payments", require("./routes/payments"));
+app.use("/api/eligible-voters", require("./routes/eligibleVoters"));
 
 // Serve static files from React build in production
 if (process.env.NODE_ENV === "production") {

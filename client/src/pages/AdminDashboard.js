@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import CandidateDetailsModal from "./CandidateDetailsModal";
+import VoterManagement from "../components/VoterManagement";
 
 const AdminDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -316,6 +317,7 @@ const AdminDashboard = () => {
           {[
             { id: "elections", label: "নির্বাচন পরিচালনা" },
             { id: "candidates", label: "প্রার্থী অনুমোদন" },
+            { id: "voters", label: "ভোটার তালিকা" },
             { id: "audit", label: "অডিট লগ" },
           ].map((tab) => (
             <button
@@ -487,6 +489,24 @@ const AdminDashboard = () => {
                                       ? "👤 CR"
                                       : "🎓 শিক্ষার্থী সংসদ"}
                               </span>
+                              {election.type === "hall" && election.hall && (
+                                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-md font-medium">
+                                  🏢{" "}
+                                  {election.hall === "SPH"
+                                    ? "Shah Paran Hall"
+                                    : election.hall === "B24H"
+                                      ? "Bijoy 24 Hall"
+                                      : election.hall === "SMAH"
+                                        ? "Syed Mujtaba Ali Hall"
+                                        : election.hall === "ASH"
+                                          ? "Ayesha Siddiqa Hall"
+                                          : election.hall === "BSCH"
+                                            ? "Begum Sirajunnesa Hall"
+                                            : election.hall === "FTZH"
+                                              ? "Fatimah Tuz Zahra Hall"
+                                              : election.hall}
+                                </span>
+                              )}
                               <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md font-medium">
                                 📅{" "}
                                 {new Date(
@@ -726,6 +746,105 @@ const AdminDashboard = () => {
                           </button>
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "voters" && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-slate-800 mb-2">
+                  ভোটার তালিকা ব্যবস্থাপনা
+                </h2>
+                <p className="text-sm text-slate-600">
+                  নির্বাচন নির্বাচন করুন এবং যোগ্য ভোটারদের তালিকা পরিচালনা করুন
+                </p>
+              </div>
+
+              {selectedElection ? (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 mb-4">
+                    <button
+                      onClick={() => setSelectedElection("")}
+                      className="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-300"
+                    >
+                      ← ফিরে যান
+                    </button>
+                    <div>
+                      <h3 className="font-bold text-slate-900">
+                        {
+                          elections.find((e) => e._id === selectedElection)
+                            ?.title
+                        }
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        {
+                          elections.find((e) => e._id === selectedElection)
+                            ?.type
+                        }{" "}
+                        নির্বাচন
+                      </p>
+                    </div>
+                  </div>
+                  <VoterManagement electionId={selectedElection} />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {elections.map((election) => (
+                    <div
+                      key={election._id}
+                      onClick={() => setSelectedElection(election._id)}
+                      className="bg-white rounded-2xl border-2 border-slate-200 p-6 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer"
+                    >
+                      <h3 className="text-lg font-bold text-slate-900 mb-2">
+                        {election.title}
+                      </h3>
+                      <div className="space-y-1 text-sm text-slate-600">
+                        <p>
+                          📋 ধরন:{" "}
+                          <span className="font-bold">{election.type}</span>
+                        </p>
+                        {election.type === "hall" && election.hall && (
+                          <p>
+                            🏢 হল:{" "}
+                            <span className="font-bold">
+                              {election.hall === "SPH"
+                                ? "Shah Paran Hall"
+                                : election.hall === "B24H"
+                                  ? "Bijoy 24 Hall"
+                                  : election.hall === "SMAH"
+                                    ? "Syed Mujtaba Ali Hall"
+                                    : election.hall === "ASH"
+                                      ? "Ayesha Siddiqa Hall"
+                                      : election.hall === "BSCH"
+                                        ? "Begum Sirajunnesa Hall"
+                                        : election.hall === "FTZH"
+                                          ? "Fatimah Tuz Zahra Hall"
+                                          : election.hall}
+                            </span>
+                          </p>
+                        )}
+                        <p>
+                          📊 স্ট্যাটাস:{" "}
+                          <span className="font-bold">{election.status}</span>
+                        </p>
+                        {election.voterListType && (
+                          <p>
+                            👥 ভোটার:{" "}
+                            <span className="font-bold">
+                              {election.voterListType === "all"
+                                ? "সকল যোগ্য"
+                                : `নির্দিষ্ট (${election.eligibleVoters?.length || 0})`}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                      <div className="mt-4 text-blue-600 font-bold text-sm">
+                        পরিচালনা করুন →
+                      </div>
                     </div>
                   ))}
                 </div>
