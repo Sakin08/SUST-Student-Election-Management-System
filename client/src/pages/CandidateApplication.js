@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, useRef } from "react";
+import { API_URL } from "../config";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
@@ -152,7 +153,7 @@ const CandidateApplication = () => {
       // Check if user already applied for any position in this election
       try {
         const myApplicationsRes = await axios.get(
-          "http://localhost:5001/api/candidates/my-applications",
+          `${API_URL}/api/candidates/my-applications`,
         );
         const existingApplication = myApplicationsRes.data.find(
           (app) => app.electionId._id === electionId,
@@ -215,7 +216,7 @@ const CandidateApplication = () => {
       });
 
       const uploadRes = await axios.post(
-        "http://localhost:5001/api/candidates/upload-photo",
+        `${API_URL}/api/candidates/upload-photo`,
         photoFormData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -285,7 +286,7 @@ const CandidateApplication = () => {
     }
 
     try {
-      await axios.post("http://localhost:5001/api/candidates", submitData, {
+      await axios.post(`${API_URL}/api/candidates`, submitData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMessage("আবেদন সফলভাবে জমা হয়েছে। অনুমোদনের জন্য অপেক্ষা করুন।");
@@ -330,7 +331,7 @@ const CandidateApplication = () => {
       });
 
       const response = await axios.post(
-        "http://localhost:5001/api/payments/init",
+        `${API_URL}/api/payments/init`,
         {
           electionId,
           positionId: formData.positionId,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { API_URL } from "../config";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
@@ -16,7 +17,7 @@ const CandidateProfile = () => {
   const fetchApplications = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5001/api/candidates/my-applications",
+        `${API_URL}/api/candidates/my-applications`,
       );
       setApplications(res.data);
     } catch (error) {

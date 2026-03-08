@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from "react";
+import { API_URL } from "../config";
 import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
@@ -61,7 +62,7 @@ const AdminDashboard = () => {
   const refreshUserData = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5001/api/auth/me", {
+      const res = await axios.get(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("Refreshed user data:", res.data);
@@ -92,7 +93,7 @@ const AdminDashboard = () => {
 
   const fetchElections = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/elections");
+      const res = await axios.get(`${API_URL}/api/elections`);
       console.log("Admin fetched all elections:", res.data.length, "elections");
       setElections(res.data);
     } catch (error) {
@@ -122,7 +123,7 @@ const AdminDashboard = () => {
 
   const fetchAuditLogs = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/audit");
+      const res = await axios.get(`${API_URL}/api/audit`);
       setAuditLogs(res.data);
     } catch (error) {
       console.error(error);

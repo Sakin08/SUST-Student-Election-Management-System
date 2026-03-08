@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from "react";
+import { API_URL } from "../config";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
@@ -19,7 +20,7 @@ const StudentDashboard = () => {
 
   const fetchElections = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/api/elections");
+      const res = await axios.get(`${API_URL}/api/elections`);
       console.log("All elections:", res.data);
       console.log("User department:", user?.department);
       console.log("User batch:", user?.batch);

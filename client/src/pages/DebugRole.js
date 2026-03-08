@@ -1,4 +1,5 @@
 import { useState, useContext } from "react";
+import { API_URL } from "../config";
 import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
 
@@ -9,7 +10,7 @@ const DebugRole = () => {
   const checkRole = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5001/api/auth/check-role", {
+      const res = await axios.get(`${API_URL}/api/auth/check-role`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setApiResponse(res.data);

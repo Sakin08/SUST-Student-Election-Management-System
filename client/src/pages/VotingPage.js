@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from "react";
+import { API_URL } from "../config";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
@@ -200,7 +201,7 @@ const VotingPage = () => {
     }
 
     try {
-      await axios.post("http://localhost:5001/api/votes", {
+      await axios.post(`${API_URL}/api/votes`, {
         candidateId,
         positionId,
         electionId,

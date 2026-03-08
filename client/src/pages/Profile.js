@@ -1,4 +1,5 @@
 import React, { useState, useContext } from "react";
+import { API_URL } from "../config";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
@@ -45,7 +46,7 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put("http://localhost:5001/api/users/profile", formData);
+      await axios.put(`${API_URL}/api/users/profile`, formData);
       setMessage("প্রোফাইল আপডেট সফল হয়েছে");
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
@@ -75,7 +76,7 @@ const Profile = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5001/api/users/profile-photo",
+        `${API_URL}/api/users/profile-photo`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
