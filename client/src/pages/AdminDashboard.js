@@ -23,8 +23,6 @@ const AdminDashboard = () => {
     endDate: "",
     applicationFee: 0,
   });
-  const [editPositions, setEditPositions] = useState([]);
-  const [editPanels, setEditPanels] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showVotingTimeModal, setShowVotingTimeModal] = useState(false);
   const [selectedElectionForVoting, setSelectedElectionForVoting] =
@@ -189,26 +187,14 @@ const AdminDashboard = () => {
     });
 
     try {
-      const [positionsRes, panelsRes] = await Promise.all([
+      await Promise.all([
         axios.get(
           `http://localhost:5001/api/positions/election/${election._id}`,
         ),
         axios.get(`http://localhost:5001/api/panels/election/${election._id}`),
       ]);
-      setEditPositions(
-        positionsRes.data.length > 0
-          ? positionsRes.data
-          : [{ title: "", isHallSpecific: false }],
-      );
-      setEditPanels(
-        panelsRes.data.length > 0
-          ? panelsRes.data
-          : [{ name: "", description: "" }],
-      );
     } catch (error) {
       console.error("Error fetching positions/panels:", error);
-      setEditPositions([{ title: "", isHallSpecific: false }]);
-      setEditPanels([{ name: "", description: "" }]);
     }
   };
 
@@ -221,8 +207,6 @@ const AdminDashboard = () => {
       endDate: "",
       applicationFee: 0,
     });
-    setEditPositions([]);
-    setEditPanels([]);
   };
 
   const saveElection = async (electionId) => {

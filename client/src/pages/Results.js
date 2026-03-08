@@ -58,7 +58,6 @@ const Results = () => {
         backgroundColor: "#ffffff",
       });
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.85); // Use JPEG with 85% quality instead of PNG
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",

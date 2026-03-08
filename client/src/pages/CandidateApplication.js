@@ -15,6 +15,7 @@ const CandidateApplication = () => {
     panelId: "",
     manifesto: "",
   });
+  // eslint-disable-next-line no-unused-vars
   const [candidatePhoto, setCandidatePhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState(null);
