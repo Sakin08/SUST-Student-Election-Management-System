@@ -11,7 +11,7 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  "https://your-app.vercel.app", // Replace with your actual Vercel domain
+  "https://sust-student-election-management-sy-lovat.vercel.app",
   "http://localhost:5173",
   "http://localhost:3000",
 ];
