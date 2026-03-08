@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
@@ -19,11 +19,72 @@ const CandidateApplication = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentId, setPaymentId] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const shouldAutoSubmitRef = useRef(false);
+  const [alreadyApplied, setAlreadyApplied] = useState(false);
 
   useEffect(() => {
     fetchData();
+
+    // Check if there's a completed payment
+    const completedPaymentId = localStorage.getItem("completedPaymentId");
+    const shouldAutoSubmit = localStorage.getItem("autoSubmitAfterPayment");
+    const savedFormData = localStorage.getItem("pendingFormData");
+
+    console.log("Checking for completed payment:", completedPaymentId);
+    console.log("Should auto submit:", shouldAutoSubmit);
+    console.log("Saved form data:", savedFormData);
+
+    if (completedPaymentId) {
+      setPaymentId(completedPaymentId);
+      localStorage.removeItem("completedPaymentId");
+
+      // Restore form data if available
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          setFormData(parsedData);
+          localStorage.removeItem("pendingFormData");
+          console.log("Form data restored:", parsedData);
+        } catch (e) {
+          console.error("Error parsing saved form data:", e);
+        }
+      }
+
+      // If auto submit flag is set
+      if (shouldAutoSubmit === "true") {
+        setMessage("পেমেন্ট সফল হয়েছে! আবেদন সাবমিট হচ্ছে...");
+        localStorage.removeItem("autoSubmitAfterPayment");
+        shouldAutoSubmitRef.current = true;
+      } else {
+        setMessage("পেমেন্ট সফল হয়েছে! এখন আবেদন সম্পূর্ণ করুন।");
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [electionId]);
+
+  // Auto submit after payment if flag is set
+  useEffect(() => {
+    if (shouldAutoSubmitRef.current && paymentId && formData.positionId) {
+      console.log("Auto submitting form after payment...");
+      console.log("PaymentId:", paymentId);
+      console.log("FormData:", formData);
+      shouldAutoSubmitRef.current = false;
+
+      // Directly call handleSubmit after a delay
+      setTimeout(() => {
+        console.log("Triggering handleSubmit programmatically...");
+        // Create a fake event object
+        const fakeEvent = {
+          preventDefault: () => {},
+        };
+        handleSubmit(fakeEvent);
+      }, 2000);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentId, formData]);
 
   const fetchData = async () => {
     try {
@@ -35,6 +96,32 @@ const CandidateApplication = () => {
       setElection(elecRes.data);
       setPositions(posRes.data);
       setPanels(panelRes.data);
+      console.log("Election data:", elecRes.data);
+      console.log("Application fee:", elecRes.data.applicationFee);
+
+      // Check if user already applied for any position in this election
+      try {
+        const myApplicationsRes = await axios.get(
+          "http://localhost:5001/api/candidates/my-applications",
+        );
+        const existingApplication = myApplicationsRes.data.find(
+          (app) => app.electionId._id === electionId,
+        );
+        if (existingApplication) {
+          setAlreadyApplied(true);
+          setMessage(
+            `আপনি ইতিমধ্যে "${existingApplication.positionId.title}" পদের জন্য আবেদন করেছেন। স্ট্যাটাস: ${
+              existingApplication.status === "pending"
+                ? "অপেক্ষমাণ"
+                : existingApplication.status === "approved"
+                  ? "অনুমোদিত"
+                  : "প্রত্যাখ্যাত"
+            }`,
+          );
+        }
+      } catch (error) {
+        console.error("Error checking existing applications:", error);
+      }
     } catch (error) {
       console.error(error);
     }
@@ -68,6 +155,22 @@ const CandidateApplication = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Check if payment is required first
+    if (
+      election?.applicationFee > 0 &&
+      (election?.type === "hall" ||
+        election?.type === "main" ||
+        election?.type === "society") &&
+      !paymentId
+    ) {
+      // Payment required but not done yet - show payment modal
+      setPaymentAmount(election.applicationFee);
+      setShowPaymentModal(true);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // If we reach here, either payment is not required or payment is already done
     const submitData = new FormData();
     submitData.append("positionId", formData.positionId);
     submitData.append("electionId", electionId);
@@ -75,6 +178,12 @@ const CandidateApplication = () => {
     submitData.append("manifesto", formData.manifesto);
     if (candidatePhoto) {
       submitData.append("candidatePhoto", candidatePhoto);
+    }
+    if (paymentId) {
+      submitData.append("paymentId", paymentId);
+      console.log("Submitting with paymentId:", paymentId);
+    } else {
+      console.log("No paymentId available");
     }
 
     try {
@@ -84,8 +193,55 @@ const CandidateApplication = () => {
       setMessage("আবেদন সফলভাবে জমা হয়েছে। অনুমোদনের জন্য অপেক্ষা করুন।");
       setTimeout(() => navigate("/"), 2000);
     } catch (error) {
+      console.error("Candidate submission error:", error.response?.data);
       setMessage(error.response?.data?.message || "আবেদন জমা ব্যর্থ হয়েছে");
     } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    try {
+      setIsSubmitting(true);
+
+      // Save form data to localStorage before payment
+      localStorage.setItem(
+        "pendingFormData",
+        JSON.stringify({
+          positionId: formData.positionId,
+          panelId: formData.panelId,
+          manifesto: formData.manifesto,
+        }),
+      );
+      localStorage.setItem("autoSubmitAfterPayment", "true");
+      localStorage.setItem("pendingElectionId", electionId);
+      localStorage.setItem("pendingPositionId", formData.positionId);
+
+      console.log("Saved to localStorage before payment:", {
+        electionId: localStorage.getItem("pendingElectionId"),
+        positionId: localStorage.getItem("pendingPositionId"),
+      });
+
+      const response = await axios.post(
+        "http://localhost:5001/api/payments/init",
+        {
+          electionId,
+          positionId: formData.positionId,
+          amount: paymentAmount,
+        },
+      );
+
+      if (response.data.success && response.data.paymentUrl) {
+        // Store payment transaction ID
+        localStorage.setItem("pendingPaymentId", response.data.transactionId);
+        localStorage.setItem("pendingElectionId", electionId);
+        localStorage.setItem("pendingPositionId", formData.positionId);
+
+        // Redirect to payment gateway
+        window.location.href = response.data.paymentUrl;
+      }
+    } catch (error) {
+      setMessage("পেমেন্ট শুরু করতে ব্যর্থ হয়েছে");
       setIsSubmitting(false);
     }
   };
@@ -142,6 +298,49 @@ const CandidateApplication = () => {
                     <span className="font-bold">{election?.department}</span>{" "}
                     বিভাগের সোসাইটি নির্বাচন এবং আপনি এই বিভাগের শিক্ষার্থী।
                   </p>
+                </div>
+              </div>
+            )}
+
+          {/* Application Fee Info */}
+          {election?.applicationFee > 0 &&
+            (election?.type === "hall" ||
+              election?.type === "main" ||
+              election?.type === "society") && (
+              <div className="mb-8 p-5 rounded-xl bg-amber-50 border-2 border-amber-200 flex items-start gap-4">
+                <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white text-xl flex-shrink-0">
+                  💳
+                </div>
+                <div className="flex-1">
+                  <p className="text-amber-800 font-black text-sm mb-1">
+                    আবেদন ফি প্রয়োজন
+                  </p>
+                  <p className="text-amber-600 text-sm">
+                    এই নির্বাচনে প্রার্থী হতে{" "}
+                    <span className="font-bold">
+                      ৳{election.applicationFee}
+                    </span>{" "}
+                    টাকা ফি প্রদান করতে হবে। আবেদন জমা দেওয়ার সময় পেমেন্ট
+                    গেটওয়েতে নিয়ে যাওয়া হবে।
+                  </p>
+                  {paymentId && (
+                    <p className="text-emerald-600 text-sm font-bold mt-2 flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      পেমেন্ট সম্পন্ন হয়েছে
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -266,11 +465,13 @@ const CandidateApplication = () => {
               <button
                 type="submit"
                 disabled={
+                  alreadyApplied ||
                   (election?.type === "society" &&
                     election?.department !== user?.department) ||
                   isSubmitting
                 }
                 className={`w-full font-black py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${
+                  alreadyApplied ||
                   (election?.type === "society" &&
                     election?.department !== user?.department) ||
                   isSubmitting
@@ -283,6 +484,8 @@ const CandidateApplication = () => {
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     জমা হচ্ছে...
                   </>
+                ) : alreadyApplied ? (
+                  "ইতিমধ্যে আবেদন করা হয়েছে"
                 ) : (
                   <>
                     আবেদন জমা দিন
@@ -311,6 +514,86 @@ const CandidateApplication = () => {
           সঠিক তথ্য প্রদান না করলে আবেদন বাতিল বলে গণ্য হবে।
         </p>
       </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl animate-in zoom-in duration-300">
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-xl">
+                💳
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-2">
+                আবেদন ফি প্রদান করুন
+              </h3>
+              <p className="text-slate-600 text-sm">
+                প্রার্থী হিসাবে আবেদন করতে আপনাকে ফি প্রদান করতে হবে
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mb-6 border-2 border-blue-100">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-slate-600 font-bold text-sm">
+                  আবেদন ফি
+                </span>
+                <span className="text-3xl font-black text-blue-600">
+                  ৳{paymentAmount}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                SSLCommerz এর মাধ্যমে নিরাপদ পেমেন্ট
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handlePayment}
+                disabled={isSubmitting}
+                className={`w-full font-black py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${
+                  isSubmitting
+                    ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                }`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    প্রক্রিয়াকরণ...
+                  </>
+                ) : (
+                  <>
+                    পেমেন্ট করুন
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M14 5l7 7m0 0l-7 7m7-7H3"
+                      />
+                    </svg>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setIsSubmitting(false);
+                }}
+                disabled={isSubmitting}
+                className="w-full font-bold py-3 rounded-xl text-slate-600 hover:bg-slate-100 transition-all"
+              >
+                বাতিল করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

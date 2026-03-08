@@ -28,6 +28,12 @@ const candidateSchema = new mongoose.Schema(
     },
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     approvedAt: Date,
+    paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
+    paymentStatus: {
+      type: String,
+      enum: ["not_required", "pending", "paid"],
+      default: "not_required",
+    },
   },
   { timestamps: true },
 );

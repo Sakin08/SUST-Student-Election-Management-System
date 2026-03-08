@@ -7,15 +7,28 @@ const { protect, adminOnly, superAdminOnly } = require("../middleware/auth");
 // Create election (Admin only)
 router.post("/", protect, adminOnly, async (req, res) => {
   try {
-    const { title, type, hall, department, startDate, endDate } = req.body;
+    const {
+      title,
+      type,
+      hall,
+      department,
+      batch,
+      section,
+      startDate,
+      endDate,
+      applicationFee,
+    } = req.body;
 
     const election = await Election.create({
       title,
       type,
       hall,
       department,
+      batch,
+      section,
       startDate,
       endDate,
+      applicationFee: applicationFee || 0,
       createdBy: req.user._id,
     });
 
@@ -88,7 +101,17 @@ router.put("/:id/status", protect, adminOnly, async (req, res) => {
 // Update election details (Super Admin only)
 router.put("/:id", protect, superAdminOnly, async (req, res) => {
   try {
-    const { title, type, hall, department, startDate, endDate } = req.body;
+    const {
+      title,
+      type,
+      hall,
+      department,
+      batch,
+      section,
+      startDate,
+      endDate,
+      applicationFee,
+    } = req.body;
 
     console.log("Updating election:", req.params.id);
     console.log("Update data:", {
@@ -96,13 +119,26 @@ router.put("/:id", protect, superAdminOnly, async (req, res) => {
       type,
       hall,
       department,
+      batch,
+      section,
       startDate,
       endDate,
+      applicationFee,
     });
 
     const election = await Election.findByIdAndUpdate(
       req.params.id,
-      { title, type, hall, department, startDate, endDate },
+      {
+        title,
+        type,
+        hall,
+        department,
+        batch,
+        section,
+        startDate,
+        endDate,
+        applicationFee: applicationFee !== undefined ? applicationFee : 0,
+      },
       { new: true },
     );
 

@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     registrationNumber: { type: String, required: true },
     batch: String,
     department: String,
+    section: String, // For CR elections (A, B, C, etc.)
     hall: {
       type: String,
       enum: [

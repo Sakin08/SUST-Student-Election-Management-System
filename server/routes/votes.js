@@ -29,6 +29,26 @@ router.post("/", protect, async (req, res) => {
       }
     }
 
+    // Check if CR election - only department + batch students can vote
+    if (election.type === "cr" && election.department && election.batch) {
+      if (req.user.department !== election.department) {
+        return res.status(403).json({
+          message:
+            "শুধুমাত্র " +
+            election.department +
+            " বিভাগের শিক্ষার্থীরা ভোট দিতে পারবে",
+        });
+      }
+      if (req.user.batch !== election.batch) {
+        return res.status(403).json({
+          message:
+            "শুধুমাত্র " +
+            election.batch +
+            " ব্যাচের শিক্ষার্থীরা ভোট দিতে পারবে",
+        });
+      }
+    }
+
     // Check if already voted for this position
     const existingVote = await Vote.findOne({
       studentId: req.user._id,

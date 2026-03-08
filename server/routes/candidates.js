@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const Candidate = require("../models/Candidate");
 const Position = require("../models/Position");
+const Election = require("../models/Election");
+const Payment = require("../models/Payment");
 const AuditLog = require("../models/AuditLog");
 const { protect, adminOnly } = require("../middleware/auth");
 const { uploadCandidate } = require("../config/upload");
@@ -13,7 +15,8 @@ router.post(
   uploadCandidate.single("candidatePhoto"),
   async (req, res) => {
     try {
-      const { positionId, electionId, panelId, manifesto } = req.body;
+      const { positionId, electionId, panelId, manifesto, paymentId } =
+        req.body;
 
       // Check if position is hall-specific or department-specific
       const position =
@@ -44,6 +47,30 @@ router.post(
         }
       }
 
+      // Check if position is batch-specific (CR election)
+      if (position.isBatchSpecific && position.electionId) {
+        const election = position.electionId;
+        if (
+          election.department &&
+          election.department !== req.user.department
+        ) {
+          return res.status(403).json({
+            message:
+              "শুধুমাত্র " +
+              election.department +
+              " বিভাগের শিক্ষার্থীরা আবেদন করতে পারবে",
+          });
+        }
+        if (election.batch && election.batch !== req.user.batch) {
+          return res.status(403).json({
+            message:
+              "শুধুমাত্র " +
+              election.batch +
+              " ব্যাচের শিক্ষার্থীরা আবেদন করতে পারবে",
+          });
+        }
+      }
+
       // Check if already applied
       const existing = await Candidate.findOne({
         studentId: req.user._id,
@@ -57,6 +84,52 @@ router.post(
           .json({ message: "Already applied for this position" });
       }
 
+      // Check payment requirement
+      const election = await Election.findById(electionId);
+      let paymentStatus = "not_required";
+      let validPaymentId = null;
+
+      console.log("Payment check:", {
+        applicationFee: election.applicationFee,
+        electionType: election.type,
+        receivedPaymentId: paymentId,
+      });
+
+      if (
+        election.applicationFee &&
+        election.applicationFee > 0 &&
+        (election.type === "hall" ||
+          election.type === "main" ||
+          election.type === "society")
+      ) {
+        // Payment is required
+        if (!paymentId) {
+          console.log("Payment required but no paymentId provided");
+          return res.status(400).json({
+            message: "আবেদন ফি প্রদান করতে হবে",
+            requiresPayment: true,
+            amount: election.applicationFee,
+          });
+        }
+
+        // Verify payment
+        const payment = await Payment.findById(paymentId);
+        if (
+          !payment ||
+          payment.studentId.toString() !== req.user._id.toString() ||
+          payment.status !== "success"
+        ) {
+          return res.status(400).json({
+            message: "পেমেন্ট যাচাই করা যায়নি",
+            requiresPayment: true,
+            amount: election.applicationFee,
+          });
+        }
+
+        paymentStatus = "paid";
+        validPaymentId = paymentId;
+      }
+
       // Cloudinary URL is available in req.file.path
       const candidatePhoto = req.file ? req.file.path : null;
 
@@ -68,6 +141,8 @@ router.post(
         hall: position.isHallSpecific ? req.user.hall : null,
         manifesto,
         candidatePhoto,
+        paymentId: validPaymentId,
+        paymentStatus,
       });
 
       res.status(201).json(candidate);

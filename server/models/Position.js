@@ -13,6 +13,8 @@ const positionSchema = new mongoose.Schema(
     // If isHallSpecific is true, candidates can only apply from their own hall
     isDepartmentSpecific: { type: Boolean, default: false },
     // If isDepartmentSpecific is true, candidates can only apply from their own department
+    isBatchSpecific: { type: Boolean, default: false },
+    // If isBatchSpecific is true, candidates can only apply from their own batch (CR elections)
   },
   { timestamps: true },
 );

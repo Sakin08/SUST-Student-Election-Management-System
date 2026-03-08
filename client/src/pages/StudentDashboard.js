@@ -20,8 +20,9 @@ const StudentDashboard = () => {
       const res = await axios.get("http://localhost:5001/api/elections");
       console.log("All elections:", res.data);
       console.log("User department:", user?.department);
+      console.log("User batch:", user?.batch);
 
-      // Filter elections: show all main/hall elections, but only society elections for user's department
+      // Filter elections: show all main/hall elections, but only society/CR elections for user's department/batch
       const filteredElections = res.data.filter((election) => {
         if (election.type === "society") {
           console.log(
@@ -33,6 +34,23 @@ const StudentDashboard = () => {
             election.department === user?.department,
           );
           return election.department === user?.department;
+        }
+        if (election.type === "cr") {
+          console.log(
+            "CR election:",
+            election.title,
+            "Department:",
+            election.department,
+            "Batch:",
+            election.batch,
+            "Match:",
+            election.department === user?.department &&
+              election.batch === user?.batch,
+          );
+          return (
+            election.department === user?.department &&
+            election.batch === user?.batch
+          );
         }
         return true; // Show all main and hall elections
       });
@@ -140,7 +158,9 @@ const StudentDashboard = () => {
                           ? "🏢 হল"
                           : election.type === "society"
                             ? "🏛️ সোসাইটি"
-                            : "🎓 প্রধান"}
+                            : election.type === "cr"
+                              ? "👤 CR"
+                              : "🎓 প্রধান"}
                       </span>
                     </div>
 
@@ -155,6 +175,14 @@ const StudentDashboard = () => {
                           {election.department}
                         </div>
                       )}
+                      {election.type === "cr" &&
+                        election.department &&
+                        election.batch && (
+                          <div className="flex items-center gap-2 text-purple-600">
+                            <span className="text-purple-400">👤</span>{" "}
+                            {election.department} - {election.batch} ব্যাচ
+                          </div>
+                        )}
                       <div className="flex items-center gap-2">
                         <span className="text-slate-300">📅</span> শুরু:{" "}
                         {new Date(election.startDate).toLocaleDateString(

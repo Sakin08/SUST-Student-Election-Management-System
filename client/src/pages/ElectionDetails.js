@@ -182,6 +182,24 @@ const ElectionDetails = () => {
                 </div>
               </div>
             </div>
+
+            {/* Application Fee Notice */}
+            {election.applicationFee > 0 &&
+              (election.type === "hall" || election.type === "main") && (
+                <div className="mt-6 p-5 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0">
+                    💳
+                  </div>
+                  <div>
+                    <p className="text-purple-900 font-black text-sm mb-1">
+                      আবেদন ফি: ৳{election.applicationFee}
+                    </p>
+                    <p className="text-purple-600 text-xs">
+                      প্রার্থী হিসাবে আবেদন করতে এই পরিমাণ ফি প্রদান করতে হবে
+                    </p>
+                  </div>
+                </div>
+              )}
           </div>
         </div>
 

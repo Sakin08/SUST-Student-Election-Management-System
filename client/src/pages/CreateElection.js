@@ -10,18 +10,25 @@ const CreateElection = () => {
     type: "main",
     hall: "",
     department: "",
+    batch: "",
     startDate: "",
     endDate: "",
+    applicationFee: 0,
   });
 
   const [positions, setPositions] = useState([
-    { title: "", isHallSpecific: false, isDepartmentSpecific: false },
+    {
+      title: "",
+      isHallSpecific: false,
+      isDepartmentSpecific: false,
+      isBatchSpecific: false,
+    },
   ]);
 
   const [panels, setPanels] = useState([{ name: "", description: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // When election type changes, update all positions' isHallSpecific/isDepartmentSpecific
+  // When election type changes, update all positions' isHallSpecific/isDepartmentSpecific/isBatchSpecific
   const handleTypeChange = (newType) => {
     setFormData({ ...formData, type: newType });
 
@@ -31,6 +38,7 @@ const CreateElection = () => {
         ...p,
         isHallSpecific: true,
         isDepartmentSpecific: false,
+        isBatchSpecific: false,
       }));
       setPositions(updatedPositions);
     } else if (newType === "society") {
@@ -39,6 +47,16 @@ const CreateElection = () => {
         ...p,
         isHallSpecific: false,
         isDepartmentSpecific: true,
+        isBatchSpecific: false,
+      }));
+      setPositions(updatedPositions);
+    } else if (newType === "cr") {
+      // CR election: all positions batch-specific
+      const updatedPositions = positions.map((p) => ({
+        ...p,
+        isHallSpecific: false,
+        isDepartmentSpecific: false,
+        isBatchSpecific: true,
       }));
       setPositions(updatedPositions);
     } else {
@@ -47,6 +65,7 @@ const CreateElection = () => {
         ...p,
         isHallSpecific: false,
         isDepartmentSpecific: false,
+        isBatchSpecific: false,
       }));
       setPositions(updatedPositions);
     }
@@ -56,9 +75,10 @@ const CreateElection = () => {
     // New positions inherit restrictions based on election type
     const isHallSpecific = formData.type === "hall";
     const isDepartmentSpecific = formData.type === "society";
+    const isBatchSpecific = formData.type === "cr";
     setPositions([
       ...positions,
-      { title: "", isHallSpecific, isDepartmentSpecific },
+      { title: "", isHallSpecific, isDepartmentSpecific, isBatchSpecific },
     ]);
   };
 
@@ -109,9 +129,9 @@ const CreateElection = () => {
           }),
         );
 
-      // Create panels (skip for society elections)
+      // Create panels (skip for society and CR elections)
       const panelPromises =
-        formData.type !== "society"
+        formData.type !== "society" && formData.type !== "cr"
           ? panels
               .filter((p) => p.name.trim())
               .map((panel) =>
@@ -127,7 +147,9 @@ const CreateElection = () => {
       const successMessage =
         formData.type === "society"
           ? "সোসাইটি নির্বাচন এবং পদ সফলভাবে তৈরি হয়েছে!"
-          : "নির্বাচন, পদ এবং প্যানেল সফলভাবে তৈরি হয়েছে!";
+          : formData.type === "cr"
+            ? "CR নির্বাচন এবং পদ সফলভাবে তৈরি হয়েছে!"
+            : "নির্বাচন, পদ এবং প্যানেল সফলভাবে তৈরি হয়েছে!";
       alert(successMessage);
       navigate("/");
     } catch (error) {
@@ -224,17 +246,20 @@ const CreateElection = () => {
                     <option value="main">🎓 শিক্ষার্থী সংসদ নির্বাচন</option>
                     <option value="hall">🏢 হল সংসদ নির্বাচন</option>
                     <option value="society">🏛️ সোসাইটি নির্বাচন</option>
+                    <option value="cr">👤 CR নির্বাচন</option>
                   </select>
                   <p className="text-xs text-slate-500 mt-2">
                     {formData.type === "main"
                       ? "সকল ছাত্রদের জন্য কেন্দ্রীয় নির্বাচন"
                       : formData.type === "hall"
                         ? "প্রতিটি হলের জন্য আলাদা নির্বাচন (সব পদ হল-নির্দিষ্ট)"
-                        : "একটি নির্দিষ্ট বিভাগের জন্য নির্বাচন (প্যানেল নেই)"}
+                        : formData.type === "society"
+                          ? "একটি নির্দিষ্ট বিভাগের জন্য নির্বাচন (প্যানেল নেই)"
+                          : "একটি নির্দিষ্ট বিভাগ ও ব্যাচের জন্য CR নির্বাচন (প্যানেল নেই)"}
                   </p>
                 </div>
 
-                {formData.type === "society" && (
+                {(formData.type === "society" || formData.type === "cr") && (
                   <div>
                     <label className="text-sm font-bold text-slate-700 block mb-2">
                       বিভাগ <span className="text-rose-500">*</span>
@@ -316,6 +341,24 @@ const CreateElection = () => {
                   </div>
                 )}
 
+                {formData.type === "cr" && (
+                  <div>
+                    <label className="text-sm font-bold text-slate-700 block mb-2">
+                      ব্যাচ <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: 2021"
+                      className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      value={formData.batch}
+                      onChange={(e) =>
+                        setFormData({ ...formData, batch: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                )}
+
                 <div></div>
 
                 <div>
@@ -347,6 +390,33 @@ const CreateElection = () => {
                     required
                   />
                 </div>
+
+                {(formData.type === "hall" ||
+                  formData.type === "main" ||
+                  formData.type === "society") && (
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-bold text-slate-700 block mb-2">
+                      আবেদন ফি (টাকা)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="যেমন: 500 (0 মানে ফি নেই)"
+                      className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      value={formData.applicationFee}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          applicationFee: parseInt(e.target.value) || 0,
+                        })
+                      }
+                    />
+                    <p className="text-xs text-slate-500 mt-2">
+                      প্রার্থী হওয়ার জন্য ফি নির্ধারণ করুন। 0 দিলে কোনো ফি
+                      লাগবে না।
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -355,9 +425,11 @@ const CreateElection = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">
-                    👔
+                    {formData.type === "cr" ? "👤" : "👔"}
                   </div>
-                  <h2 className="text-xl font-black text-slate-900">পদসমূহ</h2>
+                  <h2 className="text-xl font-black text-slate-900">
+                    {formData.type === "cr" ? "সেকশনসমূহ" : "পদসমূহ"}
+                  </h2>
                 </div>
                 <button
                   type="button"
@@ -377,7 +449,7 @@ const CreateElection = () => {
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
-                  পদ যোগ করুন
+                  {formData.type === "cr" ? "সেকশন যোগ করুন" : "পদ যোগ করুন"}
                 </button>
               </div>
 
@@ -390,7 +462,11 @@ const CreateElection = () => {
                     <div className="flex-1 space-y-3">
                       <input
                         type="text"
-                        placeholder="পদের নাম (যেমন: ভাইস প্রেসিডেন্ট, জেনারেল সেক্রেটারি)"
+                        placeholder={
+                          formData.type === "cr"
+                            ? "সেকশনের নাম (যেমন: CR, Assistant CR)"
+                            : "পদের নাম (যেমন: ভাইস প্রেসিডেন্ট, জেনারেল সেক্রেটারি)"
+                        }
                         className="w-full bg-white border-2 border-emerald-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                         value={position.title}
                         onChange={(e) =>
@@ -424,8 +500,8 @@ const CreateElection = () => {
               </div>
             </div>
 
-            {/* Panels Section - Hide for society elections */}
-            {formData.type !== "society" && (
+            {/* Panels Section - Hide for society and CR elections */}
+            {formData.type !== "society" && formData.type !== "cr" && (
               <div className="space-y-6 pt-6 border-t-2 border-slate-100">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

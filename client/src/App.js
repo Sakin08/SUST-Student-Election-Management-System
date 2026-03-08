@@ -14,6 +14,7 @@ import Profile from "./pages/Profile";
 import CandidateProfile from "./pages/CandidateProfile";
 import ForceRelogin from "./pages/ForceRelogin";
 import DebugRole from "./pages/DebugRole";
+import PaymentCallback from "./pages/PaymentCallback";
 import PrivateRoute from "./components/PrivateRoute";
 import Navbar from "./components/Navbar";
 
@@ -28,6 +29,10 @@ function App() {
             <Route path="/auth/success" element={<AuthSuccess />} />
             <Route path="/force-relogin" element={<ForceRelogin />} />
             <Route path="/debug-role" element={<DebugRole />} />
+            <Route
+              path="/payment/:status/:transactionId"
+              element={<PaymentCallback />}
+            />
             <Route
               path="/"
               element={

@@ -17,6 +17,7 @@ const AdminDashboard = () => {
     type: "",
     startDate: "",
     endDate: "",
+    applicationFee: 0,
   });
   const [editPositions, setEditPositions] = useState([]);
   const [editPanels, setEditPanels] = useState([]);
@@ -146,6 +147,7 @@ const AdminDashboard = () => {
       type: election.type,
       startDate: new Date(election.startDate).toISOString().split("T")[0],
       endDate: new Date(election.endDate).toISOString().split("T")[0],
+      applicationFee: election.applicationFee || 0,
     });
 
     try {
@@ -174,55 +176,23 @@ const AdminDashboard = () => {
 
   const cancelEdit = () => {
     setEditingElection(null);
-    setEditForm({ title: "", type: "", startDate: "", endDate: "" });
+    setEditForm({
+      title: "",
+      type: "",
+      startDate: "",
+      endDate: "",
+      applicationFee: 0,
+    });
     setEditPositions([]);
     setEditPanels([]);
   };
 
   const saveElection = async (electionId) => {
     try {
+      // Just update the election details, don't touch positions/panels
       await axios.put(
         `http://localhost:5001/api/elections/${electionId}`,
         editForm,
-      );
-
-      const existingPositions = await axios.get(
-        `http://localhost:5001/api/positions/election/${electionId}`,
-      );
-      await Promise.all(
-        existingPositions.data.map((pos) =>
-          axios.delete(`http://localhost:5001/api/positions/${pos._id}`),
-        ),
-      );
-      await Promise.all(
-        editPositions
-          .filter((p) => p.title.trim())
-          .map((position) =>
-            axios.post(`http://localhost:5001/api/positions`, {
-              ...position,
-              electionId,
-              maxWinners: 1,
-            }),
-          ),
-      );
-
-      const existingPanels = await axios.get(
-        `http://localhost:5001/api/panels/election/${electionId}`,
-      );
-      await Promise.all(
-        existingPanels.data.map((panel) =>
-          axios.delete(`http://localhost:5001/api/panels/${panel._id}`),
-        ),
-      );
-      await Promise.all(
-        editPanels
-          .filter((p) => p.name.trim())
-          .map((panel) =>
-            axios.post(`http://localhost:5001/api/panels`, {
-              ...panel,
-              electionId,
-            }),
-          ),
       );
 
       fetchElections();
@@ -407,6 +377,35 @@ const AdminDashboard = () => {
                             />
                           </div>
                         </div>
+
+                        {/* Application Fee - Only for hall, main, and society elections */}
+                        {(editForm.type === "hall" ||
+                          editForm.type === "main" ||
+                          editForm.type === "society") && (
+                          <div className="mt-4">
+                            <label className="block text-sm font-bold text-slate-700 mb-2">
+                              আবেদন ফি (টাকা)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={editForm.applicationFee}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  applicationFee: parseInt(e.target.value) || 0,
+                                })
+                              }
+                              placeholder="যেমন: 500 (0 মানে ফি নেই)"
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">
+                              প্রার্থী হওয়ার জন্য ফি নির্ধারণ করুন। 0 দিলে কোনো
+                              ফি লাগবে না।
+                            </p>
+                          </div>
+                        )}
+
                         <div className="flex gap-3 mt-6">
                           <button
                             onClick={() => saveElection(election._id)}

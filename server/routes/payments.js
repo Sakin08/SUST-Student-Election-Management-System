@@ -1,0 +1,308 @@
+const express = require("express");
+const router = express.Router();
+const SSLCommerzPayment = require("sslcommerz-lts");
+const Payment = require("../models/Payment");
+const Candidate = require("../models/Candidate");
+const Election = require("../models/Election");
+const { protect } = require("../middleware/auth");
+
+const store_id = process.env.SSLCZ_STORE_ID;
+const store_passwd = process.env.SSLCZ_STORE_PASS;
+const is_live = process.env.SSLCZ_IS_LIVE === "true";
+
+// Initialize payment
+router.post("/init", protect, async (req, res) => {
+  try {
+    const { electionId, positionId, amount } = req.body;
+
+    // Generate unique transaction ID
+    const transactionId = `TXN${Date.now()}${req.user._id.toString().slice(-4)}`;
+
+    // Create payment record
+    const payment = await Payment.create({
+      studentId: req.user._id,
+      electionId,
+      positionId,
+      amount,
+      transactionId,
+      status: "pending",
+    });
+
+    const data = {
+      total_amount: amount,
+      currency: "BDT",
+      tran_id: transactionId,
+      success_url: `${req.protocol}://${req.get("host")}/api/payments/success/${transactionId}`,
+      fail_url: `${req.protocol}://${req.get("host")}/api/payments/fail/${transactionId}`,
+      cancel_url: `${req.protocol}://${req.get("host")}/api/payments/cancel/${transactionId}`,
+      ipn_url: `${req.protocol}://${req.get("host")}/api/payments/ipn`,
+      shipping_method: "NO",
+      product_name: "Candidate Application Fee",
+      product_category: "Election",
+      product_profile: "non-physical-goods",
+      cus_name: req.user.name,
+      cus_email: req.user.email,
+      cus_add1: req.user.hall || "SUST",
+      cus_city: "Sylhet",
+      cus_postcode: "3114",
+      cus_country: "Bangladesh",
+      cus_phone: "01700000000",
+      ship_name: req.user.name,
+      ship_add1: req.user.hall || "SUST",
+      ship_city: "Sylhet",
+      ship_postcode: "3114",
+      ship_country: "Bangladesh",
+    };
+
+    const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+    const apiResponse = await sslcz.init(data);
+
+    if (apiResponse.GatewayPageURL) {
+      res.json({
+        success: true,
+        paymentUrl: apiResponse.GatewayPageURL,
+        transactionId,
+      });
+    } else {
+      await Payment.findByIdAndUpdate(payment._id, { status: "failed" });
+      res
+        .status(400)
+        .json({ success: false, message: "Payment initialization failed" });
+    }
+  } catch (error) {
+    console.error("Payment init error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Payment success callback (from SSLCommerz redirect)
+router.get("/success/:transactionId", async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    const { val_id, amount, card_type, card_issuer, bank_tran_id } = req.query;
+
+    const payment = await Payment.findOne({ transactionId });
+    if (payment && payment.status === "pending") {
+      // Update payment status
+      await Payment.findByIdAndUpdate(payment._id, {
+        status: "success",
+        bankTransactionId: bank_tran_id,
+        cardType: card_type,
+        cardIssuer: card_issuer,
+        validatedOn: new Date(),
+      });
+    }
+
+    // Redirect to frontend
+    res.redirect(`${process.env.CLIENT_URL}/payment/success/${transactionId}`);
+  } catch (error) {
+    console.error("Payment success error:", error);
+    res.redirect(
+      `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
+    );
+  }
+});
+
+// Payment success callback (POST from SSLCommerz)
+router.post("/success/:transactionId", async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    const { val_id, amount, card_type, card_issuer, bank_tran_id } = req.body;
+
+    const payment = await Payment.findOne({ transactionId });
+    if (payment && payment.status === "pending") {
+      // Update payment status
+      await Payment.findByIdAndUpdate(payment._id, {
+        status: "success",
+        bankTransactionId: bank_tran_id,
+        cardType: card_type,
+        cardIssuer: card_issuer,
+        validatedOn: new Date(),
+      });
+    }
+
+    // Redirect to frontend
+    res.redirect(`${process.env.CLIENT_URL}/payment/success/${transactionId}`);
+  } catch (error) {
+    console.error("Payment success error:", error);
+    res.redirect(
+      `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
+    );
+  }
+});
+
+// Payment success callback (POST from SSLCommerz IPN)
+router.post("/success", async (req, res) => {
+  try {
+    const { tran_id, val_id, amount, card_type, card_issuer, bank_tran_id } =
+      req.body;
+
+    const payment = await Payment.findOne({ transactionId: tran_id });
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+
+    // Update payment status
+    await Payment.findByIdAndUpdate(payment._id, {
+      status: "success",
+      bankTransactionId: bank_tran_id,
+      cardType: card_type,
+      cardIssuer: card_issuer,
+      validatedOn: new Date(),
+    });
+
+    res.json({ success: true, message: "Payment successful" });
+  } catch (error) {
+    console.error("Payment success error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Payment fail callback (GET from SSLCommerz redirect)
+router.get("/fail/:transactionId", async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+
+    const payment = await Payment.findOne({ transactionId });
+    if (payment) {
+      await Payment.findByIdAndUpdate(payment._id, { status: "failed" });
+    }
+
+    res.redirect(`${process.env.CLIENT_URL}/payment/fail/${transactionId}`);
+  } catch (error) {
+    console.error("Payment fail error:", error);
+    res.redirect(
+      `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
+    );
+  }
+});
+
+// Payment fail callback (POST from SSLCommerz)
+router.post("/fail/:transactionId", async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+
+    const payment = await Payment.findOne({ transactionId });
+    if (payment) {
+      await Payment.findByIdAndUpdate(payment._id, { status: "failed" });
+    }
+
+    res.redirect(`${process.env.CLIENT_URL}/payment/fail/${transactionId}`);
+  } catch (error) {
+    console.error("Payment fail error:", error);
+    res.redirect(
+      `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
+    );
+  }
+});
+
+// Payment fail callback (POST)
+router.post("/fail", async (req, res) => {
+  try {
+    const { tran_id } = req.body;
+
+    const payment = await Payment.findOne({ transactionId: tran_id });
+    if (payment) {
+      await Payment.findByIdAndUpdate(payment._id, { status: "failed" });
+    }
+
+    res.json({ success: false, message: "Payment failed" });
+  } catch (error) {
+    console.error("Payment fail error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Payment cancel callback (GET from SSLCommerz redirect)
+router.get("/cancel/:transactionId", async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+
+    const payment = await Payment.findOne({ transactionId });
+    if (payment) {
+      await Payment.findByIdAndUpdate(payment._id, { status: "cancelled" });
+    }
+
+    res.redirect(`${process.env.CLIENT_URL}/payment/cancel/${transactionId}`);
+  } catch (error) {
+    console.error("Payment cancel error:", error);
+    res.redirect(
+      `${process.env.CLIENT_URL}/payment/cancel/${req.params.transactionId}`,
+    );
+  }
+});
+
+// Payment cancel callback (POST from SSLCommerz)
+router.post("/cancel/:transactionId", async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+
+    const payment = await Payment.findOne({ transactionId });
+    if (payment) {
+      await Payment.findByIdAndUpdate(payment._id, { status: "cancelled" });
+    }
+
+    res.redirect(`${process.env.CLIENT_URL}/payment/cancel/${transactionId}`);
+  } catch (error) {
+    console.error("Payment cancel error:", error);
+    res.redirect(
+      `${process.env.CLIENT_URL}/payment/cancel/${req.params.transactionId}`,
+    );
+  }
+});
+
+// Payment cancel callback (POST)
+router.post("/cancel", async (req, res) => {
+  try {
+    const { tran_id } = req.body;
+
+    const payment = await Payment.findOne({ transactionId: tran_id });
+    if (payment) {
+      await Payment.findByIdAndUpdate(payment._id, { status: "cancelled" });
+    }
+
+    res.json({ success: false, message: "Payment cancelled" });
+  } catch (error) {
+    console.error("Payment cancel error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// IPN (Instant Payment Notification)
+router.post("/ipn", async (req, res) => {
+  try {
+    const { tran_id, status } = req.body;
+
+    const payment = await Payment.findOne({ transactionId: tran_id });
+    if (payment) {
+      await Payment.findByIdAndUpdate(payment._id, {
+        status: status === "VALID" ? "success" : "failed",
+      });
+    }
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("IPN error:", error);
+    res.sendStatus(500);
+  }
+});
+
+// Check payment status (no auth required - uses transactionId)
+router.get("/status/:transactionId", async (req, res) => {
+  try {
+    const payment = await Payment.findOne({
+      transactionId: req.params.transactionId,
+    }).populate("electionId positionId");
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+
+    res.json(payment);
+  } catch (error) {
+    console.error("Payment status error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+module.exports = router;
