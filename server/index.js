@@ -85,14 +85,13 @@ app.use("/api/audit", require("./routes/audit"));
 app.use("/api/payments", require("./routes/payments"));
 app.use("/api/eligible-voters", require("./routes/eligibleVoters"));
 
-// Serve static files from React build in production
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../client/build")));
-
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../client/build", "index.html"));
-  });
-}
+// Serve static files from React build in production (not needed on Vercel)
+// if (process.env.NODE_ENV === "production") {
+//   app.use(express.static(path.join(__dirname, "../client/build")));
+//   app.get("*", (req, res) => {
+//     res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+//   });
+// }
 
 // MongoDB connection
 mongoose
