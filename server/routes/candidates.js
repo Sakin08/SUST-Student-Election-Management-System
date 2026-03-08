@@ -8,6 +8,47 @@ const AuditLog = require("../models/AuditLog");
 const { protect, adminOnly } = require("../middleware/auth");
 const { uploadCandidate } = require("../config/upload");
 
+// Upload candidate photo (before payment)
+router.post(
+  "/upload-photo",
+  protect,
+  uploadCandidate.single("candidatePhoto"),
+  async (req, res) => {
+    try {
+      console.log("=== Photo Upload Request ===");
+      console.log("User:", req.user?.name, req.user?.registrationNumber);
+      console.log("Has file:", !!req.file);
+      console.log(
+        "File details:",
+        req.file
+          ? {
+              fieldname: req.file.fieldname,
+              originalname: req.file.originalname,
+              mimetype: req.file.mimetype,
+              size: req.file.size,
+            }
+          : "No file",
+      );
+
+      if (!req.file) {
+        console.log("ERROR: No photo uploaded");
+        return res.status(400).json({ message: "No photo uploaded" });
+      }
+
+      // Cloudinary URL is available in req.file.path
+      const photoUrl = req.file.path;
+
+      console.log("Photo uploaded to Cloudinary successfully:", photoUrl);
+      console.log("===========================");
+
+      res.json({ photoUrl });
+    } catch (error) {
+      console.error("Photo upload error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+);
+
 // Apply as candidate
 router.post(
   "/",
@@ -15,8 +56,14 @@ router.post(
   uploadCandidate.single("candidatePhoto"),
   async (req, res) => {
     try {
-      const { positionId, electionId, panelId, manifesto, paymentId } =
-        req.body;
+      const {
+        positionId,
+        electionId,
+        panelId,
+        manifesto,
+        paymentId,
+        candidatePhotoUrl,
+      } = req.body;
 
       // Check if position is hall-specific or department-specific
       const position =
@@ -130,8 +177,19 @@ router.post(
         validPaymentId = paymentId;
       }
 
-      // Cloudinary URL is available in req.file.path
-      const candidatePhoto = req.file ? req.file.path : null;
+      // Cloudinary URL is available in req.file.path or from candidatePhotoUrl
+      const candidatePhoto = req.file
+        ? req.file.path
+        : candidatePhotoUrl || null;
+
+      console.log("=== Creating Candidate ===");
+      console.log("Candidate photo details:", {
+        hasFile: !!req.file,
+        filePath: req.file?.path,
+        hasPhotoUrl: !!candidatePhotoUrl,
+        photoUrl: candidatePhotoUrl,
+        finalPhoto: candidatePhoto,
+      });
 
       const candidate = await Candidate.create({
         studentId: req.user._id,
@@ -144,6 +202,12 @@ router.post(
         paymentId: validPaymentId,
         paymentStatus,
       });
+
+      console.log("Created candidate successfully:");
+      console.log("  - ID:", candidate._id);
+      console.log("  - Photo:", candidate.candidatePhoto);
+      console.log("  - Has photo:", !!candidate.candidatePhoto);
+      console.log("========================");
 
       res.status(201).json(candidate);
     } catch (error) {

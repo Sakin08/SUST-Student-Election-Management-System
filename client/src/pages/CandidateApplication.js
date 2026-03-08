@@ -17,6 +17,8 @@ const CandidateApplication = () => {
   });
   const [candidatePhoto, setCandidatePhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentId, setPaymentId] = useState(null);
@@ -45,7 +47,16 @@ const CandidateApplication = () => {
       if (savedFormData) {
         try {
           const parsedData = JSON.parse(savedFormData);
-          setFormData(parsedData);
+          setFormData({
+            positionId: parsedData.positionId,
+            panelId: parsedData.panelId,
+            manifesto: parsedData.manifesto,
+          });
+          // Restore uploaded photo URL
+          if (parsedData.candidatePhotoUrl) {
+            setUploadedPhotoUrl(parsedData.candidatePhotoUrl);
+            console.log("Photo URL restored:", parsedData.candidatePhotoUrl);
+          }
           localStorage.removeItem("pendingFormData");
           console.log("Form data restored:", parsedData);
         } catch (e) {
@@ -55,11 +66,11 @@ const CandidateApplication = () => {
 
       // If auto submit flag is set
       if (shouldAutoSubmit === "true") {
-        setMessage("পেমেন্ট সফল হয়েছে! আবেদন সাবমিট হচ্ছে...");
+        setMessage("পেমেন্ট সফল হয়েছে! আবেদন স্বয়ংক্রিয়ভাবে জমা হচ্ছে...");
         localStorage.removeItem("autoSubmitAfterPayment");
         shouldAutoSubmitRef.current = true;
       } else {
-        setMessage("পেমেন্ট সফল হয়েছে! এখন আবেদন সম্পূর্ণ করুন।");
+        setMessage("পেমেন্ট সফল হয়েছে! এখন আবেদন জমা দিন।");
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,23 +142,65 @@ const CandidateApplication = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePhotoChange = (e) => {
+  const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage("ফাইল সাইজ ৫ MB এর বেশি হতে পারবে না");
-        return;
-      }
+    if (!file) return;
 
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        setMessage("শুধুমাত্র ছবি ফাইল আপলোড করুন");
-        return;
-      }
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage("ফাইল সাইজ ৫ MB এর বেশি হতে পারবে না");
+      return;
+    }
 
-      setCandidatePhoto(file);
-      setPhotoPreview(URL.createObjectURL(file));
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setMessage("শুধুমাত্র ছবি ফাইল আপলোড করুন");
+      return;
+    }
+
+    setCandidatePhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+
+    // Upload immediately to Cloudinary
+    setIsUploadingPhoto(true);
+    setMessage("ছবি আপলোড হচ্ছে...");
+
+    const photoFormData = new FormData();
+    photoFormData.append("candidatePhoto", file);
+
+    try {
+      console.log("Uploading photo immediately...", {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      });
+
+      const uploadRes = await axios.post(
+        "http://localhost:5001/api/candidates/upload-photo",
+        photoFormData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
+
+      setUploadedPhotoUrl(uploadRes.data.photoUrl);
+      console.log("Photo uploaded successfully:", uploadRes.data.photoUrl);
+      setMessage("ছবি সফলভাবে আপলোড হয়েছে! ✓");
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setMessage("");
+      }, 3000);
+    } catch (uploadError) {
+      console.error("Photo upload failed:", uploadError);
+      console.error("Upload error response:", uploadError.response?.data);
+      setMessage(
+        `ছবি আপলোড ব্যর্থ হয়েছে: ${uploadError.response?.data?.message || uploadError.message}`,
+      );
+      setCandidatePhoto(null);
+      setPhotoPreview(null);
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -176,9 +229,15 @@ const CandidateApplication = () => {
     submitData.append("electionId", electionId);
     submitData.append("panelId", formData.panelId || "");
     submitData.append("manifesto", formData.manifesto);
-    if (candidatePhoto) {
-      submitData.append("candidatePhoto", candidatePhoto);
+
+    // Use the uploaded photo URL (already uploaded when user selected the photo)
+    if (uploadedPhotoUrl) {
+      submitData.append("candidatePhotoUrl", uploadedPhotoUrl);
+      console.log("Submitting with uploaded photo URL:", uploadedPhotoUrl);
+    } else {
+      console.log("No photo URL available for submission");
     }
+
     if (paymentId) {
       submitData.append("paymentId", paymentId);
       console.log("Submitting with paymentId:", paymentId);
@@ -191,6 +250,13 @@ const CandidateApplication = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMessage("আবেদন সফলভাবে জমা হয়েছে। অনুমোদনের জন্য অপেক্ষা করুন।");
+
+      // Clear localStorage after successful submission
+      localStorage.removeItem("pendingFormData");
+      localStorage.removeItem("autoSubmitAfterPayment");
+      localStorage.removeItem("pendingElectionId");
+      localStorage.removeItem("pendingPositionId");
+
       setTimeout(() => navigate("/"), 2000);
     } catch (error) {
       console.error("Candidate submission error:", error.response?.data);
@@ -204,13 +270,14 @@ const CandidateApplication = () => {
     try {
       setIsSubmitting(true);
 
-      // Save form data to localStorage before payment
+      // Save form data and photo URL to localStorage before payment
       localStorage.setItem(
         "pendingFormData",
         JSON.stringify({
           positionId: formData.positionId,
           panelId: formData.panelId,
           manifesto: formData.manifesto,
+          candidatePhotoUrl: uploadedPhotoUrl, // Photo already uploaded
         }),
       );
       localStorage.setItem("autoSubmitAfterPayment", "true");
@@ -220,6 +287,7 @@ const CandidateApplication = () => {
       console.log("Saved to localStorage before payment:", {
         electionId: localStorage.getItem("pendingElectionId"),
         positionId: localStorage.getItem("pendingPositionId"),
+        photoUrl: uploadedPhotoUrl,
       });
 
       const response = await axios.post(
@@ -261,6 +329,7 @@ const CandidateApplication = () => {
 
         {/* Main Form Card */}
         <div className="bg-white rounded-b-3xl shadow-xl border-x border-b border-slate-100 p-8 md:p-12 transition-all">
+          {/* Application Closed Warning */}
           {/* Department Restriction Warning for Society Elections */}
           {election?.type === "society" &&
             election?.department !== user?.department && (
@@ -431,33 +500,66 @@ const CandidateApplication = () => {
               </label>
               <div className="flex items-center gap-6">
                 {photoPreview && (
-                  <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-blue-200 shadow-lg">
+                  <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-blue-200 shadow-lg">
                     <img
                       src={photoPreview}
                       alt="Preview"
                       className="w-full h-full object-cover"
                     />
+                    {uploadedPhotoUrl && (
+                      <div className="absolute top-1 right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs">
+                        ✓
+                      </div>
+                    )}
                   </div>
                 )}
                 <label className="flex-1 cursor-pointer">
-                  <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 hover:border-blue-400 hover:bg-blue-50/30 transition-all text-center">
-                    <div className="text-4xl mb-2">📸</div>
-                    <p className="text-sm font-bold text-slate-600">
-                      ছবি আপলোড করুন
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">সর্বোচ্চ ৫ MB</p>
+                  <div
+                    className={`border-2 border-dashed rounded-2xl p-6 transition-all text-center ${
+                      isUploadingPhoto
+                        ? "border-blue-400 bg-blue-50"
+                        : "border-slate-300 hover:border-blue-400 hover:bg-blue-50/30"
+                    }`}
+                  >
+                    {isUploadingPhoto ? (
+                      <>
+                        <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-2"></div>
+                        <p className="text-sm font-bold text-blue-600">
+                          আপলোড হচ্ছে...
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-4xl mb-2">📸</div>
+                        <p className="text-sm font-bold text-slate-600">
+                          ছবি আপলোড করুন
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          সর্বোচ্চ ৫ MB
+                        </p>
+                      </>
+                    )}
                   </div>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handlePhotoChange}
                     className="hidden"
+                    disabled={isUploadingPhoto}
                   />
                 </label>
               </div>
-              <p className="mt-2 text-xs text-slate-400">
-                এই ছবিটি নির্বাচনের সময় ব্যালট পেপারে প্রদর্শিত হবে।
-              </p>
+              {uploadedPhotoUrl && (
+                <p className="mt-2 text-xs text-emerald-600 flex items-center gap-1">
+                  <span className="text-base">✓</span>
+                  ছবি সফলভাবে আপলোড হয়েছে
+                </p>
+              )}
+              {!uploadedPhotoUrl && (
+                <p className="mt-2 text-xs text-slate-400">
+                  এই ছবিটি নির্বাচনের সময় ব্যালট পেপারে প্রদর্শিত হবে।
+                </p>
+              )}
             </div>
 
             {/* Action Button */}
@@ -531,7 +633,7 @@ const CandidateApplication = () => {
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mb-6 border-2 border-blue-100">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mb-4 border-2 border-blue-100">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-slate-600 font-bold text-sm">
                   আবেদন ফি
@@ -543,6 +645,23 @@ const CandidateApplication = () => {
               <p className="text-xs text-slate-500">
                 SSLCommerz এর মাধ্যমে নিরাপদ পেমেন্ট
               </p>
+            </div>
+
+            {/* Info about photo */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">ℹ️</span>
+                <div>
+                  <p className="text-blue-900 font-bold text-sm mb-1">
+                    গুরুত্বপূর্ণ তথ্য
+                  </p>
+                  <p className="text-blue-700 text-xs">
+                    {uploadedPhotoUrl
+                      ? "আপনার ছবি ইতিমধ্যে আপলোড হয়েছে। পেমেন্ট সফল হলে স্বয়ংক্রিয়ভাবে আবেদন জমা হবে।"
+                      : "পেমেন্ট সফল হওয়ার পর আপনাকে এই পেজে ফিরিয়ে আনা হবে এবং আবেদন স্বয়ংক্রিয়ভাবে জমা হবে।"}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-3">

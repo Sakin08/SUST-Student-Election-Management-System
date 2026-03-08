@@ -30,15 +30,15 @@ const PaymentCallback = () => {
         // Store payment ID for candidate application
         localStorage.setItem("completedPaymentId", response.data._id);
 
-        // Clear pending data
+        // Clear pending payment ID but keep election/position for redirect
         localStorage.removeItem("pendingPaymentId");
-        localStorage.removeItem("pendingElectionId");
-        localStorage.removeItem("pendingPositionId");
 
         if (electionId) {
-          setMessage(
-            "পেমেন্ট সফল হয়েছে! আপনার আবেদন স্বয়ংক্রিয়ভাবে জমা হয়েছে। ড্যাশবোর্ডে ফিরে যান।",
-          );
+          setMessage("পেমেন্ট সফল হয়েছে! আবেদন পেজে ফিরে যাচ্ছেন...");
+          // Redirect back to application page after 2 seconds
+          setTimeout(() => {
+            navigate(`/apply/${electionId}`);
+          }, 2000);
         } else {
           setMessage(
             "পেমেন্ট সফল হয়েছে! ড্যাশবোর্ডে ফিরে গিয়ে আবেদন সম্পূর্ণ করুন।",
@@ -87,10 +87,19 @@ const PaymentCallback = () => {
             <p className="text-slate-600 mb-6">{message}</p>
 
             <button
-              onClick={() => navigate("/")}
+              onClick={() => {
+                const electionId = localStorage.getItem("pendingElectionId");
+                if (electionId && status === "success") {
+                  navigate(`/apply/${electionId}`);
+                } else {
+                  navigate("/");
+                }
+              }}
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
             >
-              ড্যাশবোর্ডে ফিরে যান
+              {status === "success"
+                ? "আবেদন পেজে ফিরে যান"
+                : "ড্যাশবোর্ডে ফিরে যান"}
             </button>
           </>
         )}

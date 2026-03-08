@@ -145,4 +145,20 @@ router.get("/results/:electionId", protect, async (req, res) => {
   }
 });
 
+// Get user's votes for a specific election
+router.get("/my-votes/:electionId", protect, async (req, res) => {
+  try {
+    const { electionId } = req.params;
+
+    const votes = await Vote.find({
+      studentId: req.user._id,
+      electionId,
+    }).populate("positionId", "title");
+
+    res.json(votes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

@@ -15,6 +15,8 @@ const electionSchema = new mongoose.Schema(
     applicationFee: { type: Number, default: 0 }, // Fee for candidate application
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
+    votingStartTime: { type: String }, // Time when voting starts (HH:MM format)
+    votingEndTime: { type: String }, // Time when voting ends (HH:MM format)
     status: {
       type: String,
       enum: ["created", "candidateFinalized", "voting", "completed"],

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import CandidateDetailsModal from "./CandidateDetailsModal";
+import VotingCountdown from "../components/VotingCountdown";
 
 const ElectionDetails = () => {
   const { id } = useParams();
@@ -183,9 +184,38 @@ const ElectionDetails = () => {
               </div>
             </div>
 
+            {/* Voting Time & Countdown */}
+            {election.status === "voting" &&
+              election.votingStartTime &&
+              election.votingEndTime && (
+                <div className="mt-6 p-5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0 animate-pulse">
+                        🗳️
+                      </div>
+                      <div>
+                        <p className="text-emerald-900 font-black text-sm mb-1">
+                          ভোটিং সময়: {election.votingStartTime} -{" "}
+                          {election.votingEndTime}
+                        </p>
+                        <p className="text-emerald-600 text-xs">
+                          নির্ধারিত সময়ের মধ্যে ভোট প্রদান করুন
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-white px-4 py-2 rounded-xl border border-emerald-200">
+                      <VotingCountdown election={election} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
             {/* Application Fee Notice */}
             {election.applicationFee > 0 &&
-              (election.type === "hall" || election.type === "main") && (
+              (election.type === "hall" ||
+                election.type === "main" ||
+                election.type === "society") && (
                 <div className="mt-6 p-5 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 flex items-center gap-4">
                   <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0">
                     💳

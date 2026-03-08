@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import CandidateDetailsModal from "./CandidateDetailsModal";
+import VotingCountdown from "../components/VotingCountdown";
 
 const VotingPage = () => {
   const { electionId } = useParams();
@@ -16,11 +17,60 @@ const VotingPage = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [isVotingTimeValid, setIsVotingTimeValid] = useState(true);
+  const [votingTimeMessage, setVotingTimeMessage] = useState("");
 
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [electionId]);
+
+  // Check voting time validity
+  useEffect(() => {
+    if (!election) return;
+
+    const checkVotingTime = () => {
+      if (!election.votingStartTime || !election.votingEndTime) {
+        setIsVotingTimeValid(true);
+        setVotingTimeMessage("");
+        return;
+      }
+
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      const [startHour, startMin] = election.votingStartTime
+        .split(":")
+        .map(Number);
+      const [endHour, endMin] = election.votingEndTime.split(":").map(Number);
+      const [currentHour, currentMin] = currentTime.split(":").map(Number);
+
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+      const currentMinutes = currentHour * 60 + currentMin;
+
+      if (currentMinutes < startMinutes) {
+        setIsVotingTimeValid(false);
+        setVotingTimeMessage(
+          `ভোটিং এখনও শুরু হয়নি। ভোটিং শুরু হবে ${election.votingStartTime} থেকে ${election.votingEndTime} পর্যন্ত।`,
+        );
+      } else if (currentMinutes > endMinutes) {
+        setIsVotingTimeValid(false);
+        setVotingTimeMessage(
+          `ভোটিং সময় শেষ হয়ে গেছে। ভোটিং ছিল ${election.votingStartTime} থেকে ${election.votingEndTime} পর্যন্ত।`,
+        );
+      } else {
+        setIsVotingTimeValid(true);
+        setVotingTimeMessage("");
+      }
+    };
+
+    checkVotingTime();
+    // Check every minute
+    const interval = setInterval(checkVotingTime, 60000);
+
+    return () => clearInterval(interval);
+  }, [election]);
 
   const fetchData = async () => {
     try {
@@ -33,7 +83,27 @@ const VotingPage = () => {
       ]);
       setElection(elecRes.data);
       setAllPositions(posRes.data);
-      setPositions(posRes.data);
+
+      // Check which positions user has already voted for
+      try {
+        const votesRes = await axios.get(
+          `http://localhost:5001/api/votes/my-votes/${electionId}`,
+        );
+        const votedPositionIds = votesRes.data.map(
+          (vote) => vote.positionId._id || vote.positionId,
+        );
+
+        // Filter out positions that user has already voted for
+        const availablePositions = posRes.data.filter(
+          (pos) => !votedPositionIds.includes(pos._id),
+        );
+        setPositions(availablePositions);
+        setVotedPositions(votedPositionIds);
+      } catch (error) {
+        console.error("Error fetching user votes:", error);
+        setPositions(posRes.data);
+      }
+
       setCandidates(candRes.data.filter((c) => c.status === "approved"));
     } catch (error) {
       console.error(error);
@@ -93,6 +163,21 @@ const VotingPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 md:px-8">
       <div className="max-w-5xl mx-auto">
+        {/* Voting Time Restriction Warning */}
+        {!isVotingTimeValid && (
+          <div className="mb-8 p-6 rounded-2xl bg-amber-50 border-2 border-amber-200 flex items-start gap-4 shadow-lg">
+            <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0">
+              ⏰
+            </div>
+            <div>
+              <p className="text-amber-800 font-black text-lg mb-2">
+                ভোটিং সময়ের বাইরে
+              </p>
+              <p className="text-amber-600 text-sm">{votingTimeMessage}</p>
+            </div>
+          </div>
+        )}
+
         {/* Department Restriction Warning for Society Elections */}
         {election?.type === "society" &&
           election?.department !== user?.department && (
@@ -123,6 +208,15 @@ const VotingPage = () => {
             <p className="text-slate-500 font-medium">
               প্রতিটি পদের জন্য আপনার পছন্দের প্রার্থী নির্বাচন করে ভোট দিন
             </p>
+
+            {/* Voting Countdown */}
+            {election && (
+              <div className="mt-4 flex justify-center">
+                <div className="bg-white px-6 py-3 rounded-full border-2 border-slate-200 shadow-sm">
+                  <VotingCountdown election={election} />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Progress Tracker */}
@@ -133,7 +227,9 @@ const VotingPage = () => {
                   ভোটিং অগ্রগতি
                 </h3>
                 <p className="text-sm text-slate-500 font-medium">
-                  সব পদে ভোট দিতে হবে
+                  {votedPositions.length === allPositions.length
+                    ? "সব পদে ভোট সম্পন্ন!"
+                    : `${allPositions.length - votedPositions.length}টি পদে ভোট বাকি`}
                 </p>
               </div>
               <div className="text-right">
@@ -172,6 +268,27 @@ const VotingPage = () => {
                 </span>
               )}
             </div>
+
+            {/* Show voted positions if any */}
+            {votedPositions.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs font-bold text-slate-600 mb-2">
+                  ✓ ভোট দেওয়া হয়েছে:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {allPositions
+                    .filter((pos) => votedPositions.includes(pos._id))
+                    .map((pos) => (
+                      <span
+                        key={pos._id}
+                        className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md font-medium border border-emerald-200"
+                      >
+                        {pos.title}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -345,15 +462,19 @@ const VotingPage = () => {
                   {/* Submission Row */}
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t-2 border-slate-100">
                     <p className="text-sm font-medium text-slate-500">
-                      {selectedVotes[position._id]
-                        ? "✅ প্রার্থী নির্বাচন করা হয়েছে। এখন ভোট নিশ্চিত করুন।"
-                        : "⚠️ ভোট প্রদানের জন্য একজন প্রার্থী নির্বাচন করুন।"}
+                      {!isVotingTimeValid
+                        ? "⏰ ভোটিং সময়ের বাইরে। এখন ভোট দেওয়া যাবে না।"
+                        : selectedVotes[position._id]
+                          ? "✅ প্রার্থী নির্বাচন করা হয়েছে। এখন ভোট নিশ্চিত করুন।"
+                          : "⚠️ ভোট প্রদানের জন্য একজন প্রার্থী নির্বাচন করুন।"}
                     </p>
                     <button
                       onClick={() => submitVote(position._id)}
-                      disabled={!selectedVotes[position._id]}
+                      disabled={
+                        !selectedVotes[position._id] || !isVotingTimeValid
+                      }
                       className={`px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 shadow-lg ${
-                        selectedVotes[position._id]
+                        selectedVotes[position._id] && isVotingTimeValid
                           ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 active:scale-95 shadow-blue-200"
                           : "bg-slate-200 text-slate-400 cursor-not-allowed"
                       }`}

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
+import VotingCountdown from "../components/VotingCountdown";
 
 const StudentDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -193,6 +194,13 @@ const StudentDashboard = () => {
                         <span className="text-slate-300">⌛</span> শেষ:{" "}
                         {new Date(election.endDate).toLocaleDateString("bn-BD")}
                       </div>
+
+                      {/* Voting Countdown */}
+                      {election.status === "voting" && (
+                        <div className="pt-2 border-t border-slate-100">
+                          <VotingCountdown election={election} />
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Buttons Container */}

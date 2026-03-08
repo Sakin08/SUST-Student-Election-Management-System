@@ -22,6 +22,13 @@ const AdminDashboard = () => {
   const [editPositions, setEditPositions] = useState([]);
   const [editPanels, setEditPanels] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [showVotingTimeModal, setShowVotingTimeModal] = useState(false);
+  const [selectedElectionForVoting, setSelectedElectionForVoting] =
+    useState(null);
+  const [votingTimeForm, setVotingTimeForm] = useState({
+    startTime: "",
+    endTime: "",
+  });
 
   // Debug: Log user role
   useEffect(() => {
@@ -78,6 +85,14 @@ const AdminDashboard = () => {
       const res = await axios.get(
         `http://localhost:5001/api/candidates/election/${electionId}`,
       );
+      console.log("Fetched candidates:", res.data);
+      res.data.forEach((candidate, index) => {
+        console.log(`Candidate ${index}:`, {
+          name: candidate.studentId?.name,
+          photo: candidate.candidatePhoto,
+          hasPhoto: !!candidate.candidatePhoto,
+        });
+      });
       setCandidates(res.data);
     } catch (error) {
       console.error(error);
@@ -204,6 +219,39 @@ const AdminDashboard = () => {
         "আপডেট ব্যর্থ হয়েছে: " +
           (error.response?.data?.message || error.message),
       );
+    }
+  };
+
+  const openVotingTimeModal = (election) => {
+    setSelectedElectionForVoting(election);
+    setVotingTimeForm({
+      startTime: election.votingStartTime || "",
+      endTime: election.votingEndTime || "",
+    });
+    setShowVotingTimeModal(true);
+  };
+
+  const startVotingWithTime = async () => {
+    if (!votingTimeForm.startTime || !votingTimeForm.endTime) {
+      alert("দয়া করে ভোটিং শুরু এবং শেষের সময় নির্বাচন করুন");
+      return;
+    }
+
+    try {
+      await axios.put(
+        `http://localhost:5001/api/elections/${selectedElectionForVoting._id}/status`,
+        {
+          status: "voting",
+          votingStartTime: votingTimeForm.startTime,
+          votingEndTime: votingTimeForm.endTime,
+        },
+      );
+      fetchElections();
+      setShowVotingTimeModal(false);
+      setSelectedElectionForVoting(null);
+      alert("ভোটিং শুরু হয়েছে");
+    } catch (error) {
+      alert("ভোটিং শুরু ব্যর্থ হয়েছে");
     }
   };
 
@@ -433,7 +481,11 @@ const AdminDashboard = () => {
                               <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-md font-medium">
                                 {election.type === "hall"
                                   ? "🏢 হল সংসদ"
-                                  : "🎓 শিক্ষার্থী সংসদ"}
+                                  : election.type === "society"
+                                    ? "🏛️ সোসাইটি"
+                                    : election.type === "cr"
+                                      ? "👤 CR"
+                                      : "🎓 শিক্ষার্থী সংসদ"}
                               </span>
                               <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md font-medium">
                                 📅{" "}
@@ -441,6 +493,14 @@ const AdminDashboard = () => {
                                   election.startDate,
                                 ).toLocaleDateString("bn-BD")}
                               </span>
+                              {election.status === "voting" &&
+                                election.votingStartTime &&
+                                election.votingEndTime && (
+                                  <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-md font-medium">
+                                    ⏰ {election.votingStartTime} -{" "}
+                                    {election.votingEndTime}
+                                  </span>
+                                )}
                             </div>
                           </div>
                           <span className={getStatusBadge(election.status)}>
@@ -470,9 +530,7 @@ const AdminDashboard = () => {
                             ✓ প্রার্থী চূড়ান্ত
                           </button>
                           <button
-                            onClick={() =>
-                              updateElectionStatus(election._id, "voting")
-                            }
+                            onClick={() => openVotingTimeModal(election)}
                             disabled={
                               election.status === "voting" ||
                               election.status === "completed"
@@ -589,12 +647,26 @@ const AdminDashboard = () => {
                               src={candidate.candidatePhoto}
                               alt={candidate.studentId?.name}
                               className="w-20 h-20 rounded-xl object-cover border-2 border-slate-200 shadow-sm"
+                              onError={(e) => {
+                                console.error(
+                                  "Failed to load candidate photo:",
+                                  candidate.candidatePhoto,
+                                );
+                                e.target.style.display = "none";
+                                e.target.nextSibling.style.display = "flex";
+                              }}
                             />
-                          ) : (
-                            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-black text-3xl shadow-sm">
-                              {candidate.studentId?.name?.charAt(0)}
-                            </div>
-                          )}
+                          ) : null}
+                          <div
+                            className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-black text-3xl shadow-sm"
+                            style={{
+                              display: candidate.candidatePhoto
+                                ? "none"
+                                : "flex",
+                            }}
+                          >
+                            {candidate.studentId?.name?.charAt(0)}
+                          </div>
                           <span className={getStatusBadge(candidate.status)}>
                             {candidate.status}
                           </span>
@@ -720,6 +792,100 @@ const AdminDashboard = () => {
           candidate={selectedCandidate}
           onClose={() => setSelectedCandidate(null)}
         />
+      )}
+
+      {/* Voting Time Selection Modal */}
+      {showVotingTimeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl animate-in zoom-in duration-300">
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-xl">
+                🗳️
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-2">
+                ভোটিং সময় নির্ধারণ করুন
+              </h3>
+              <p className="text-slate-600 text-sm">
+                ভোটিং শুরু এবং শেষের সময় নির্বাচন করুন
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  ভোটিং শুরুর সময় <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="time"
+                  value={votingTimeForm.startTime}
+                  onChange={(e) =>
+                    setVotingTimeForm({
+                      ...votingTimeForm,
+                      startTime: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  ভোটিং শেষের সময় <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="time"
+                  value={votingTimeForm.endTime}
+                  onChange={(e) =>
+                    setVotingTimeForm({
+                      ...votingTimeForm,
+                      endTime: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                />
+              </div>
+
+              <div className="bg-blue-50 border-2 border-blue-100 rounded-xl p-4">
+                <p className="text-xs text-blue-700">
+                  💡 নির্ধারিত সময়ের মধ্যেই শিক্ষার্থীরা ভোট দিতে পারবে। সময়ের
+                  বাইরে ভোট দেওয়া যাবে না।
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={startVotingWithTime}
+                className="w-full font-black py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700"
+              >
+                ভোটিং শুরু করুন
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowVotingTimeModal(false);
+                  setSelectedElectionForVoting(null);
+                }}
+                className="w-full font-bold py-3 rounded-xl text-slate-600 hover:bg-slate-100 transition-all"
+              >
+                বাতিল করুন
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -72,10 +72,17 @@ router.get("/:id", protect, async (req, res) => {
 // Update election status (must be before /:id route)
 router.put("/:id/status", protect, adminOnly, async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, votingStartTime, votingEndTime } = req.body;
+
+    const updateData = { status };
+
+    // If voting times are provided, include them in the update
+    if (votingStartTime) updateData.votingStartTime = votingStartTime;
+    if (votingEndTime) updateData.votingEndTime = votingEndTime;
+
     const election = await Election.findByIdAndUpdate(
       req.params.id,
-      { status },
+      updateData,
       { new: true },
     );
 
@@ -88,7 +95,7 @@ router.put("/:id/status", protect, adminOnly, async (req, res) => {
       action: "update_election",
       targetId: election._id,
       electionId: election._id,
-      details: `Updated election status to: ${status}`,
+      details: `Updated election status to: ${status}${votingStartTime ? ` with voting time ${votingStartTime} - ${votingEndTime}` : ""}`,
     });
 
     res.json(election);
