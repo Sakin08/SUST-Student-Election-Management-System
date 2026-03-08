@@ -63,6 +63,16 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Debug endpoint to check OAuth config
+app.get("/api/debug/oauth", (req, res) => {
+  res.status(200).json({
+    callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    clientURL: process.env.CLIENT_URL,
+    hasClientId: !!process.env.GOOGLE_CLIENT_ID,
+    hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+  });
+});
+
 // Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/users"));
