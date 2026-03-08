@@ -44,6 +44,15 @@ app.use(passport.session());
 // Passport config
 require("./config/passport")(passport);
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "API is running",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/users"));
@@ -68,8 +77,18 @@ if (process.env.NODE_ENV === "production") {
 // MongoDB connection
 mongoose
   .connect(process.env.MONGODB_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => {
+    if (process.env.NODE_ENV !== "production") {
+      console.log("✅ MongoDB connected");
+    }
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+  });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`🚀 Server running on port ${PORT}`);
+  }
+});
