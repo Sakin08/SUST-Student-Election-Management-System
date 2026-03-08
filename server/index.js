@@ -1,0 +1,55 @@
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const session = require("express-session");
+const passport = require("passport");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+
+const app = express();
+
+// Middleware
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === "production" },
+  }),
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Passport config
+require("./config/passport")(passport);
+
+// Routes
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/users", require("./routes/users"));
+app.use("/api/elections", require("./routes/elections"));
+app.use("/api/positions", require("./routes/positions"));
+app.use("/api/panels", require("./routes/panels"));
+app.use("/api/candidates", require("./routes/candidates"));
+app.use("/api/votes", require("./routes/votes"));
+app.use("/api/audit", require("./routes/audit"));
+
+// Serve static files from React build in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../client/build")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+  });
+}
+
+// MongoDB connection
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
