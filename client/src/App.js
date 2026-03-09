@@ -34,6 +34,18 @@ function App() {
               element={<PaymentCallback />}
             />
             <Route
+              path="/payment/success/:transactionId"
+              element={<PaymentCallback />}
+            />
+            <Route
+              path="/payment/fail/:transactionId"
+              element={<PaymentCallback />}
+            />
+            <Route
+              path="/payment/cancel/:transactionId"
+              element={<PaymentCallback />}
+            />
+            <Route
               path="/"
               element={
                 <PrivateRoute>

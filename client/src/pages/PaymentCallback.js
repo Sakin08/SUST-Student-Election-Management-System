@@ -4,15 +4,30 @@ import axios from "axios";
 import { API_URL } from "../config";
 
 const PaymentCallback = () => {
-  const { status, transactionId } = useParams();
+  const params = useParams();
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // Extract status and transactionId from params
+  // Supports both /payment/:status/:transactionId and /payment/success/:transactionId
+  const status =
+    params.status ||
+    (window.location.pathname.includes("/success")
+      ? "success"
+      : window.location.pathname.includes("/fail")
+        ? "fail"
+        : window.location.pathname.includes("/cancel")
+          ? "cancel"
+          : "unknown");
+  const transactionId = params.transactionId;
+
   useEffect(() => {
-    handlePaymentCallback();
+    if (transactionId) {
+      handlePaymentCallback();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, transactionId]);
+  }, [transactionId]);
 
   const handlePaymentCallback = async () => {
     try {
