@@ -9,6 +9,7 @@ const { protect } = require("../middleware/auth");
 const store_id = process.env.SSLCZ_STORE_ID;
 const store_passwd = process.env.SSLCZ_STORE_PASS;
 const is_live = process.env.SSLCZ_IS_LIVE === "true";
+const skip_payment = process.env.SKIP_PAYMENT === "true"; // For testing without payment gateway
 
 // Initialize payment
 router.post("/init", protect, async (req, res) => {
@@ -20,6 +21,31 @@ router.post("/init", protect, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Missing required fields: electionId, positionId, or amount",
+      });
+    }
+
+    // Skip payment for testing (if enabled)
+    if (skip_payment) {
+      const transactionId = `TEST${Date.now()}${req.user._id.toString().slice(-4)}`;
+
+      // Create payment record with success status
+      await Payment.create({
+        studentId: req.user._id,
+        electionId,
+        positionId,
+        amount,
+        transactionId,
+        status: "success",
+      });
+
+      // Return success URL that redirects to payment callback
+      const successUrl = `${process.env.CLIENT_URL}/payment/success/${transactionId}`;
+
+      return res.json({
+        success: true,
+        paymentUrl: successUrl,
+        transactionId,
+        testMode: true,
       });
     }
 

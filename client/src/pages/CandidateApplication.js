@@ -350,8 +350,19 @@ const CandidateApplication = () => {
     } catch (error) {
       console.error("Payment initialization error:", error);
       console.error("Error response:", error.response?.data);
-      const errorMessage =
-        error.response?.data?.message || "পেমেন্ট শুরু করতে ব্যর্থ হয়েছে";
+      console.error(
+        "Error details:",
+        JSON.stringify(error.response?.data?.details, null, 2),
+      );
+
+      let errorMessage = "পেমেন্ট শুরু করতে ব্যর্থ হয়েছে";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      if (error.response?.data?.details?.failedreason) {
+        errorMessage += `: ${error.response.data.details.failedreason}`;
+      }
+
       setMessage(errorMessage);
       setIsSubmitting(false);
     }
