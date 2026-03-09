@@ -93,7 +93,7 @@ const VotingPage = () => {
   const checkEligibility = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5001/api/eligible-voters/${electionId}/check-eligibility`,
+        `${API_URL}/api/eligible-voters/${electionId}/check-eligibility`,
       );
       setIsEligible(response.data.eligible);
       setEligibilityMessage(response.data.reason);
@@ -112,11 +112,9 @@ const VotingPage = () => {
   const fetchData = async () => {
     try {
       const [elecRes, posRes, candRes] = await Promise.all([
-        axios.get(`http://localhost:5001/api/elections/${electionId}`),
-        axios.get(`http://localhost:5001/api/positions/election/${electionId}`),
-        axios.get(
-          `http://localhost:5001/api/candidates/election/${electionId}`,
-        ),
+        axios.get(`${API_URL}/api/elections/${electionId}`),
+        axios.get(`${API_URL}/api/positions/election/${electionId}`),
+        axios.get(`${API_URL}/api/candidates/election/${electionId}`),
       ]);
       setElection(elecRes.data);
 
@@ -135,7 +133,7 @@ const VotingPage = () => {
       // Check which positions user has already voted for
       try {
         const votesRes = await axios.get(
-          `http://localhost:5001/api/votes/my-votes/${electionId}`,
+          `${API_URL}/api/votes/my-votes/${electionId}`,
         );
         const votedPositionIds = votesRes.data.map(
           (vote) => vote.positionId._id || vote.positionId,
@@ -237,19 +235,21 @@ const VotingPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 md:px-8">
+    <div className="min-h-screen bg-slate-50 py-8 sm:py-12 px-4 md:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Eligibility Check Warning */}
         {!isEligible && (
-          <div className="mb-8 p-6 rounded-2xl bg-rose-50 border-2 border-rose-200 flex items-start gap-4 shadow-lg">
-            <div className="w-12 h-12 bg-rose-500 rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0">
+          <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-rose-50 border-2 border-rose-200 flex items-start gap-3 sm:gap-4 shadow-lg">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-rose-500 rounded-lg sm:rounded-xl flex items-center justify-center text-white text-xl sm:text-2xl flex-shrink-0">
               🚫
             </div>
             <div>
-              <p className="text-rose-800 font-black text-lg mb-2">
+              <p className="text-rose-800 font-black text-base sm:text-lg mb-2">
                 ভোট দেওয়ার যোগ্যতা নেই
               </p>
-              <p className="text-rose-600 text-sm mb-2">{eligibilityMessage}</p>
+              <p className="text-rose-600 text-xs sm:text-sm mb-2">
+                {eligibilityMessage}
+              </p>
               <p className="text-rose-500 text-xs">
                 আপনার রেজিস্ট্রেশন: {user?.registrationNumber}
               </p>
@@ -297,19 +297,19 @@ const VotingPage = () => {
           )}
 
         {/* Header with Progress */}
-        <div className="mb-10">
-          <div className="text-center mb-6">
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
+        <div className="mb-8 sm:mb-10">
+          <div className="text-center mb-4 sm:mb-6">
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-2">
               গোপন ব্যালট 🗳️
             </h1>
-            <p className="text-slate-500 font-medium">
+            <p className="text-sm sm:text-base text-slate-500 font-medium">
               প্রতিটি পদের জন্য আপনার পছন্দের প্রার্থী নির্বাচন করে ভোট দিন
             </p>
 
             {/* Voting Countdown */}
             {election && (
               <div className="mt-4 flex justify-center">
-                <div className="bg-white px-6 py-3 rounded-full border-2 border-slate-200 shadow-sm">
+                <div className="bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-full border-2 border-slate-200 shadow-sm">
                   <VotingCountdown election={election} />
                 </div>
               </div>
@@ -317,7 +317,7 @@ const VotingPage = () => {
           </div>
 
           {/* Progress Tracker */}
-          <div className="bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-lg">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-2 border-slate-200 shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-black text-slate-800">

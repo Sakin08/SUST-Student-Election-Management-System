@@ -93,12 +93,12 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
+    <div className="min-h-screen bg-slate-50 py-8 sm:py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row items-center gap-6 mb-8 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6 sm:mb-8 bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm">
           <div className="relative group">
-            <div className="w-24 h-24 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-4xl font-black shadow-lg shadow-blue-200 overflow-hidden">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-lg shadow-blue-200 overflow-hidden">
               {profilePhotoPreview ? (
                 <img
                   src={profilePhotoPreview}
@@ -126,10 +126,10 @@ const Profile = () => {
             )}
           </div>
           <div className="text-center md:text-left">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {user?.name}
             </h1>
-            <p className="text-blue-600 font-bold">
+            <p className="text-sm sm:text-base text-blue-600 font-bold">
               {user?.department} • {user?.batch} ব্যাচ
             </p>
           </div>
@@ -137,7 +137,7 @@ const Profile = () => {
 
         {message && (
           <div
-            className={`mb-6 p-4 rounded-2xl border text-sm font-bold animate-in fade-in slide-in-from-top-2 duration-300 ${
+            className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-bold animate-in fade-in slide-in-from-top-2 duration-300 ${
               message.includes("সফল")
                 ? "bg-emerald-50 text-emerald-700 border-emerald-100"
                 : "bg-rose-50 text-rose-700 border-rose-100"
@@ -149,12 +149,12 @@ const Profile = () => {
 
         <form
           onSubmit={handleSubmit}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8"
         >
           {/* Read-Only Academic Info */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-slate-100/50 p-6 rounded-3xl border border-slate-200">
-              <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">
+          <div className="lg:col-span-1 space-y-4 sm:space-y-6">
+            <div className="bg-slate-100/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200">
+              <h3 className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest mb-4 sm:mb-6">
                 প্রাতিষ্ঠানিক তথ্য
               </h3>
               <div className="space-y-4">
@@ -180,8 +180,8 @@ const Profile = () => {
           </div>
 
           {/* Editable Personal Info */}
-          <div className="lg:col-span-2 space-y-8 bg-white p-8 md:p-10 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="lg:col-span-2 space-y-6 sm:space-y-8 bg-white p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 mb-2">
                   আপনার হল *
@@ -260,7 +260,7 @@ const Profile = () => {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-100 hover:shadow-blue-200 transition-all active:scale-[0.99]"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg shadow-blue-100 hover:shadow-blue-200 transition-all active:scale-[0.99] text-sm sm:text-base"
             >
               প্রোফাইল আপডেট করুন
             </button>

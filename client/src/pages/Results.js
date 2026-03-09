@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { API_URL } from "../config";
 
 const Results = () => {
   const { electionId } = useParams();
@@ -21,9 +22,9 @@ const Results = () => {
   const fetchResults = async () => {
     try {
       const [resRes, posRes, elecRes] = await Promise.all([
-        axios.get(`http://localhost:5001/api/votes/results/${electionId}`),
-        axios.get(`http://localhost:5001/api/positions/election/${electionId}`),
-        axios.get(`http://localhost:5001/api/elections/${electionId}`),
+        axios.get(`${API_URL}/api/votes/results/${electionId}`),
+        axios.get(`${API_URL}/api/positions/election/${electionId}`),
+        axios.get(`${API_URL}/api/elections/${electionId}`),
       ]);
       console.log("Results data:", resRes.data);
       console.log("Positions data:", posRes.data);
@@ -148,12 +149,12 @@ const Results = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/30 py-12 px-4 md:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/30 py-8 sm:py-12 px-4 md:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Back Button */}
         <Link
           to="/"
-          className="inline-flex items-center text-slate-500 hover:text-blue-600 font-bold text-sm mb-6 transition-colors group"
+          className="inline-flex items-center text-slate-500 hover:text-blue-600 font-bold text-xs sm:text-sm mb-4 sm:mb-6 transition-colors group"
         >
           <svg
             className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform"
@@ -172,27 +173,27 @@ const Results = () => {
         </Link>
 
         {/* Header */}
-        <div className="text-center mb-12 relative">
+        <div className="text-center mb-8 sm:mb-12 relative">
           {/* Decorative Elements */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-gradient-to-br from-emerald-200 to-blue-200 rounded-full blur-3xl opacity-30 -z-10"></div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 sm:w-40 h-32 sm:h-40 bg-gradient-to-br from-emerald-200 to-blue-200 rounded-full blur-3xl opacity-30 -z-10"></div>
 
-          <div className="inline-block mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl flex items-center justify-center text-4xl shadow-2xl shadow-emerald-200 animate-bounce">
+          <div className="inline-block mb-4 sm:mb-6">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl sm:rounded-3xl flex items-center justify-center text-3xl sm:text-4xl shadow-2xl shadow-emerald-200 animate-bounce">
               🏆
             </div>
           </div>
 
-          <h1 className="text-5xl font-black text-slate-900 tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-3 sm:mb-4">
             নির্বাচনী ফলাফল
           </h1>
 
           {election && (
-            <p className="text-xl text-slate-600 font-bold mb-6">
+            <p className="text-lg sm:text-xl text-slate-600 font-bold mb-4 sm:mb-6">
               {election.title}
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <div className="inline-flex items-center gap-3 px-6 py-3 bg-white rounded-full border-2 border-emerald-200 shadow-lg">
               <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-black text-slate-700 uppercase tracking-widest">

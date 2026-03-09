@@ -188,13 +188,13 @@ const CreateElection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/30 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-emerald-50/30 py-8 sm:py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <Link
             to="/"
-            className="inline-flex items-center text-slate-500 hover:text-blue-600 font-bold text-sm mb-4 transition-colors group"
+            className="inline-flex items-center text-slate-500 hover:text-blue-600 font-bold text-xs sm:text-sm mb-4 transition-colors group"
           >
             <svg
               className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform"
@@ -212,15 +212,15 @@ const CreateElection = () => {
             ড্যাশবোর্ডে ফিরে যান
           </Link>
 
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-3xl shadow-xl shadow-blue-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-2">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-2xl sm:text-3xl shadow-xl shadow-blue-200">
               🗳️
             </div>
             <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
                 নতুন নির্বাচন তৈরি করুন
               </h1>
-              <p className="text-slate-500 mt-1">
+              <p className="text-sm sm:text-base text-slate-500 mt-1">
                 নির্বাচন, পদ এবং প্যানেল একসাথে সেটআপ করুন
               </p>
             </div>
@@ -228,8 +228,11 @@ const CreateElection = () => {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-3xl border-2 border-slate-200 shadow-2xl overflow-hidden">
-          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border-2 border-slate-200 shadow-2xl overflow-hidden">
+          <form
+            onSubmit={handleSubmit}
+            className="p-6 sm:p-8 space-y-6 sm:space-y-8"
+          >
             {/* Election Basic Info */}
             <div className="space-y-6">
               <div className="flex items-center gap-3 pb-4 border-b-2 border-slate-100">

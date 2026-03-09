@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { API_URL } from "../config";
 
 const VoterManagement = ({ electionId }) => {
   const [voterListType, setVoterListType] = useState("all");
@@ -30,7 +31,7 @@ const VoterManagement = ({ electionId }) => {
   const fetchElection = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5001/api/elections/${electionId}`,
+        `${API_URL}/api/elections/${electionId}`,
       );
       setElection(response.data);
     } catch (error) {
@@ -41,7 +42,7 @@ const VoterManagement = ({ electionId }) => {
   const fetchVoters = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5001/api/eligible-voters/${electionId}?limit=10000`,
+        `${API_URL}/api/eligible-voters/${electionId}?limit=10000`,
       );
       setVoterListType(response.data.voterListType);
       setEligibleVoters(response.data.voters);
@@ -53,10 +54,9 @@ const VoterManagement = ({ electionId }) => {
 
   const handleTypeChange = async (newType) => {
     try {
-      await axios.put(
-        `http://localhost:5001/api/eligible-voters/${electionId}/type`,
-        { voterListType: newType },
-      );
+      await axios.put(`${API_URL}/api/eligible-voters/${electionId}/type`, {
+        voterListType: newType,
+      });
       setVoterListType(newType);
       setMessage("ভোটার তালিকা ধরন আপডেট হয়েছে");
       setTimeout(() => setMessage(""), 3000);
@@ -88,7 +88,7 @@ const VoterManagement = ({ electionId }) => {
       }
 
       const response = await axios.post(
-        `http://localhost:5001/api/eligible-voters/${electionId}/add`,
+        `${API_URL}/api/eligible-voters/${electionId}/add`,
         payload,
       );
       setMessage(response.data.message);
@@ -149,7 +149,7 @@ const VoterManagement = ({ electionId }) => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `http://localhost:5001/api/eligible-voters/${electionId}/bulk`,
+        `${API_URL}/api/eligible-voters/${electionId}/bulk`,
         { registrationNumbers },
       );
       setMessage(response.data.message);
@@ -177,7 +177,7 @@ const VoterManagement = ({ electionId }) => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `http://localhost:5001/api/eligible-voters/${electionId}/upload-csv`,
+        `${API_URL}/api/eligible-voters/${electionId}/upload-csv`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -216,7 +216,7 @@ const VoterManagement = ({ electionId }) => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `http://localhost:5001/api/eligible-voters/${electionId}/auto-populate`,
+        `${API_URL}/api/eligible-voters/${electionId}/auto-populate`,
         autoPopulateForm,
       );
       setMessage(response.data.message);
@@ -236,7 +236,7 @@ const VoterManagement = ({ electionId }) => {
 
     try {
       const response = await axios.delete(
-        `http://localhost:5001/api/eligible-voters/${electionId}/remove/${regNum}`,
+        `${API_URL}/api/eligible-voters/${electionId}/remove/${regNum}`,
       );
       setMessage(response.data.message);
       fetchVoters();
@@ -258,7 +258,7 @@ const VoterManagement = ({ electionId }) => {
     setLoading(true);
     try {
       const response = await axios.delete(
-        `http://localhost:5001/api/eligible-voters/${electionId}/clear`,
+        `${API_URL}/api/eligible-voters/${electionId}/clear`,
       );
       setMessage(response.data.message);
       fetchVoters();

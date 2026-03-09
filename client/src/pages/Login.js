@@ -49,13 +49,13 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden px-4 py-8">
       {/* Decorative Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100 rounded-full blur-3xl opacity-50"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-100 rounded-full blur-3xl opacity-50"></div>
 
-      <div className="relative z-10 w-full max-w-5xl px-6">
-        <div className="grid md:grid-cols-2 gap-8 items-center">
+      <div className="relative z-10 w-full max-w-5xl">
+        <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
           {/* Left Side - Image */}
           <div className="hidden md:block">
             <img
@@ -66,23 +66,23 @@ const Login = () => {
           </div>
 
           {/* Right Side - Login Form */}
-          <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/60 p-10 md:p-12 border border-slate-100 transition-all">
+          <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-slate-200/60 p-6 sm:p-8 md:p-12 border border-slate-100 transition-all">
             {/* Logo/Icon Area */}
-            <div className="flex justify-center mb-8">
-              <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200">
+            <div className="flex justify-center mb-6 md:mb-8">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-600 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200">
                 <img
                   src="/sust-logo.png"
                   alt="SUST Logo"
-                  className="w-14 h-14 object-contain"
+                  className="w-10 h-10 sm:w-14 sm:h-14 object-contain"
                 />
               </div>
             </div>
 
-            <div className="text-center mb-10">
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-3">
+            <div className="text-center mb-8 md:mb-10">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2 md:mb-3">
                 SUST নির্বাচন
               </h1>
-              <p className="text-slate-500 font-medium leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-500 font-medium leading-relaxed">
                 {showEmailLogin
                   ? isRegister
                     ? "নতুন একাউন্ট তৈরি করুন"
@@ -96,7 +96,7 @@ const Login = () => {
                 {/* Google Login Button */}
                 <button
                   onClick={handleGoogleLogin}
-                  className="w-full flex items-center justify-center gap-4 bg-white border-2 border-slate-100 py-4 px-6 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 hover:border-blue-200 hover:text-blue-600 transition-all duration-300 active:scale-[0.98] shadow-sm group"
+                  className="w-full flex items-center justify-center gap-3 sm:gap-4 bg-white border-2 border-slate-100 py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl text-sm sm:text-base text-slate-700 font-bold hover:bg-slate-50 hover:border-blue-200 hover:text-blue-600 transition-all duration-300 active:scale-[0.98] shadow-sm group"
                 >
                   <svg
                     className="w-6 h-6 group-hover:scale-110 transition-transform"
@@ -135,15 +135,15 @@ const Login = () => {
 
                 <button
                   onClick={() => setShowEmailLogin(true)}
-                  className="w-full py-4 px-6 rounded-2xl text-slate-700 font-bold bg-slate-100 hover:bg-slate-200 transition-all"
+                  className="w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl text-sm sm:text-base text-slate-700 font-bold bg-slate-100 hover:bg-slate-200 transition-all"
                 >
                   📧 ইমেইল দিয়ে লগইন করুন
                 </button>
               </>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm">
                     {error}
                   </div>
                 )}
@@ -157,7 +157,7 @@ const Login = () => {
                       setFormData({ ...formData, name: e.target.value })
                     }
                     required
-                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-slate-200 rounded-lg sm:rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                   />
                 )}
 
@@ -169,7 +169,7 @@ const Login = () => {
                     setFormData({ ...formData, email: e.target.value })
                   }
                   required
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-slate-200 rounded-lg sm:rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                 />
                 <input
                   type="password"
@@ -179,13 +179,13 @@ const Login = () => {
                     setFormData({ ...formData, password: e.target.value })
                   }
                   required
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-slate-200 rounded-lg sm:rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                 />
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold transition-all disabled:opacity-50"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold transition-all disabled:opacity-50"
                 >
                   {loading
                     ? "অপেক্ষা করুন..."
@@ -216,10 +216,10 @@ const Login = () => {
             )}
 
             {/* Information Note */}
-            <div className="mt-10 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
-              <div className="flex items-start gap-3 text-left">
+            <div className="mt-6 sm:mt-10 p-3 sm:p-4 bg-blue-50/50 rounded-xl sm:rounded-2xl border border-blue-100">
+              <div className="flex items-start gap-2 sm:gap-3 text-left">
                 <div className="mt-1 w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0"></div>
-                <p className="text-xs text-blue-800 leading-relaxed font-semibold">
+                <p className="text-[10px] sm:text-xs text-blue-800 leading-relaxed font-semibold">
                   নিরাপত্তা নিশ্চিত করতে শুধুমাত্র{" "}
                   <span className="underline">@student.sust.edu</span> ডোমেইন
                   ভ্যালিড হিসেবে গণ্য হবে।
@@ -230,7 +230,7 @@ const Login = () => {
         </div>
 
         {/* Footer Text */}
-        <p className="text-center mt-8 text-slate-400 text-sm font-medium">
+        <p className="text-center mt-6 sm:mt-8 text-slate-400 text-xs sm:text-sm font-medium">
           © {new Date().getFullYear()} SUST নির্বাচন কমিশন
         </p>
       </div>

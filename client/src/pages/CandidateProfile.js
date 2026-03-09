@@ -16,9 +16,7 @@ const CandidateProfile = () => {
 
   const fetchApplications = async () => {
     try {
-      const res = await axios.get(
-        `${API_URL}/api/candidates/my-applications`,
-      );
+      const res = await axios.get(`${API_URL}/api/candidates/my-applications`);
       setApplications(res.data);
     } catch (error) {
       console.error(error);
@@ -38,9 +36,7 @@ const CandidateProfile = () => {
 
     setDeletingId(applicationId);
     try {
-      await axios.delete(
-        `http://localhost:5001/api/candidates/${applicationId}`,
-      );
+      await axios.delete(`${API_URL}/api/candidates/${applicationId}`);
       alert("আবেদন সফলভাবে মুছে ফেলা হয়েছে");
       fetchApplications(); // Refresh the list
     } catch (error) {

@@ -47,7 +47,7 @@ const StudentDashboard = () => {
           if (election.type === "hall") {
             try {
               const eligibilityRes = await axios.get(
-                `http://localhost:5001/api/eligible-voters/${election._id}/check-eligibility`,
+                `${API_URL}/api/eligible-voters/${election._id}/check-eligibility`,
               );
               return {
                 election,
@@ -141,9 +141,9 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-slate-50 pb-12 sm:pb-20">
       {/* Welcome Banner */}
-      <div className="bg-white border-b border-slate-200 mb-8 pt-10 pb-12">
+      <div className="bg-white border-b border-slate-200 mb-6 md:mb-8 pt-6 md:pt-10 pb-8 md:pb-12">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-4xl font-black text-slate-900 tracking-tight">

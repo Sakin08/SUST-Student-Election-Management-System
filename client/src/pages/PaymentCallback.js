@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_URL } from "../config";
 
 const PaymentCallback = () => {
   const { status, transactionId } = useParams();
@@ -17,7 +18,7 @@ const PaymentCallback = () => {
     try {
       // Check payment status
       const response = await axios.get(
-        `http://localhost:5001/api/payments/status/${transactionId}`,
+        `${API_URL}/api/payments/status/${transactionId}`,
       );
 
       if (response.data.status === "success") {

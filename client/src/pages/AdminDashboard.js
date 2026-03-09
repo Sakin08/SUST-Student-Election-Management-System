@@ -105,7 +105,7 @@ const AdminDashboard = () => {
   const fetchCandidates = async (electionId) => {
     try {
       const res = await axios.get(
-        `http://localhost:5001/api/candidates/election/${electionId}`,
+        `${API_URL}/api/candidates/election/${electionId}`,
       );
       console.log("Fetched candidates:", res.data);
       res.data.forEach((candidate, index) => {
@@ -132,10 +132,9 @@ const AdminDashboard = () => {
 
   const updateElectionStatus = async (electionId, status) => {
     try {
-      await axios.put(
-        `http://localhost:5001/api/elections/${electionId}/status`,
-        { status },
-      );
+      await axios.put(`${API_URL}/api/elections/${electionId}/status`, {
+        status,
+      });
       fetchElections();
       alert("স্ট্যাটাস আপডেট হয়েছে");
     } catch (error) {
@@ -145,10 +144,9 @@ const AdminDashboard = () => {
 
   const updateCandidateStatus = async (candidateId, status) => {
     try {
-      await axios.put(
-        `http://localhost:5001/api/candidates/${candidateId}/status`,
-        { status },
-      );
+      await axios.put(`${API_URL}/api/candidates/${candidateId}/status`, {
+        status,
+      });
       fetchCandidates(selectedElection);
       fetchAuditLogs();
       alert(
@@ -165,7 +163,7 @@ const AdminDashboard = () => {
     }
 
     try {
-      await axios.delete(`http://localhost:5001/api/elections/${electionId}`);
+      await axios.delete(`${API_URL}/api/elections/${electionId}`);
       fetchElections();
       fetchAuditLogs();
       alert("নির্বাচন মুছে ফেলা হয়েছে");
@@ -189,10 +187,8 @@ const AdminDashboard = () => {
 
     try {
       await Promise.all([
-        axios.get(
-          `http://localhost:5001/api/positions/election/${election._id}`,
-        ),
-        axios.get(`http://localhost:5001/api/panels/election/${election._id}`),
+        axios.get(`${API_URL}/api/positions/election/${election._id}`),
+        axios.get(`${API_URL}/api/panels/election/${election._id}`),
       ]);
     } catch (error) {
       console.error("Error fetching positions/panels:", error);
@@ -213,10 +209,7 @@ const AdminDashboard = () => {
   const saveElection = async (electionId) => {
     try {
       // Just update the election details, don't touch positions/panels
-      await axios.put(
-        `http://localhost:5001/api/elections/${electionId}`,
-        editForm,
-      );
+      await axios.put(`${API_URL}/api/elections/${electionId}`, editForm);
 
       fetchElections();
       fetchAuditLogs();
@@ -247,7 +240,7 @@ const AdminDashboard = () => {
 
     try {
       await axios.put(
-        `http://localhost:5001/api/elections/${selectedElectionForVoting._id}/status`,
+        `${API_URL}/api/elections/${selectedElectionForVoting._id}/status`,
         {
           status: "voting",
           votingStartTime: votingTimeForm.startTime,
@@ -280,19 +273,19 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
       {/* Header Section */}
-      <div className="bg-white border-b border-slate-200 mb-8">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex justify-between items-center">
+      <div className="bg-white border-b border-slate-200 mb-6 md:mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 অ্যাডমিন ড্যাশবোর্ড
               </h1>
-              <p className="text-slate-500 mt-1">
+              <p className="text-sm sm:text-base text-slate-500 mt-1">
                 SUST নির্বাচন ব্যবস্থাপনা সিস্টেম
               </p>
             </div>
             {user && (
-              <div className="text-right">
+              <div className="text-left sm:text-right w-full sm:w-auto">
                 <p className="text-sm text-slate-600">{user.name}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span
@@ -318,9 +311,9 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Modern Tab Navigation */}
-        <div className="flex p-1 bg-slate-200/50 rounded-xl w-fit mb-8 gap-1">
+        <div className="flex flex-wrap sm:flex-nowrap p-1 bg-slate-200/50 rounded-xl w-full sm:w-fit mb-6 md:mb-8 gap-1">
           {[
             { id: "elections", label: "নির্বাচন পরিচালনা" },
             { id: "candidates", label: "প্রার্থী অনুমোদন" },
@@ -330,7 +323,7 @@ const AdminDashboard = () => {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-white text-blue-600 shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
@@ -345,24 +338,24 @@ const AdminDashboard = () => {
         <div className="space-y-6">
           {activeTab === "elections" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-800">
                     নির্বাচন তালিকা
                   </h2>
-                  <p className="text-sm text-slate-500 mt-1">
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
                     সকল নির্বাচন দেখছেন ({elections.length} টি)
                   </p>
                 </div>
                 <Link
                   to="/create-election"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-200 flex items-center gap-2"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
                 >
                   + নতুন নির্বাচন তৈরি করুন
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 {elections.map((election) => (
                   <div
                     key={election._id}
@@ -866,23 +859,25 @@ const AdminDashboard = () => {
 
           {activeTab === "audit" && (
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm animate-in fade-in duration-500">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                <h2 className="font-bold text-slate-800">অডিট লগ ইতিহাস</h2>
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 bg-slate-50/50">
+                <h2 className="font-bold text-sm sm:text-base text-slate-800">
+                  অডিট লগ ইতিহাস
+                </h2>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse min-w-[640px]">
                   <thead>
                     <tr className="bg-slate-50/50">
-                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">
                         সময়
                       </th>
-                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">
                         অ্যাডমিন
                       </th>
-                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">
                         কার্যক্রম
                       </th>
-                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">
                         বিবরণ
                       </th>
                     </tr>
@@ -893,18 +888,18 @@ const AdminDashboard = () => {
                         key={log._id}
                         className="hover:bg-slate-50/80 transition-colors"
                       >
-                        <td className="px-6 py-4 text-sm text-slate-600">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-slate-600">
                           {new Date(log.createdAt).toLocaleString("bn-BD")}
                         </td>
-                        <td className="px-6 py-4 text-sm font-bold text-slate-900">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-bold text-slate-900">
                           {log.adminId?.name}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-[10px] font-black uppercase">
                             {log.action}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-500">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-slate-500">
                           {log.details}
                         </td>
                       </tr>

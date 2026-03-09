@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import CandidateDetailsModal from "./CandidateDetailsModal";
 import VotingCountdown from "../components/VotingCountdown";
+import { API_URL } from "../config";
 
 const ElectionDetails = () => {
   const { id } = useParams();
@@ -20,9 +21,9 @@ const ElectionDetails = () => {
   const fetchData = async () => {
     try {
       const [elecRes, posRes, candRes] = await Promise.all([
-        axios.get(`http://localhost:5001/api/elections/${id}`),
-        axios.get(`http://localhost:5001/api/positions/election/${id}`),
-        axios.get(`http://localhost:5001/api/candidates/election/${id}`),
+        axios.get(`${API_URL}/api/elections/${id}`),
+        axios.get(`${API_URL}/api/positions/election/${id}`),
+        axios.get(`${API_URL}/api/candidates/election/${id}`),
       ]);
       setElection(elecRes.data);
       setPositions(posRes.data);

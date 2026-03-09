@@ -35,7 +35,7 @@ const CandidateApplication = () => {
       // Check eligibility first to get hall from admin input
       try {
         const response = await axios.get(
-          `http://localhost:5001/api/eligible-voters/${electionId}/check-eligibility`,
+          `${API_URL}/api/eligible-voters/${electionId}/check-eligibility`,
         );
         if (response.data.hall) {
           setVoterHall(response.data.hall);
@@ -121,9 +121,9 @@ const CandidateApplication = () => {
   const fetchData = async () => {
     try {
       const [elecRes, posRes, panelRes] = await Promise.all([
-        axios.get(`http://localhost:5001/api/elections/${electionId}`),
-        axios.get(`http://localhost:5001/api/positions/election/${electionId}`),
-        axios.get(`http://localhost:5001/api/panels/election/${electionId}`),
+        axios.get(`${API_URL}/api/elections/${electionId}`),
+        axios.get(`${API_URL}/api/positions/election/${electionId}`),
+        axios.get(`${API_URL}/api/panels/election/${electionId}`),
       ]);
       setElection(elecRes.data);
 
@@ -330,14 +330,11 @@ const CandidateApplication = () => {
         photoUrl: uploadedPhotoUrl,
       });
 
-      const response = await axios.post(
-        `${API_URL}/api/payments/init`,
-        {
-          electionId,
-          positionId: formData.positionId,
-          amount: paymentAmount,
-        },
-      );
+      const response = await axios.post(`${API_URL}/api/payments/init`, {
+        electionId,
+        positionId: formData.positionId,
+        amount: paymentAmount,
+      });
 
       if (response.data.success && response.data.paymentUrl) {
         // Store payment transaction ID
