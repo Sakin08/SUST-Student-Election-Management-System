@@ -135,8 +135,25 @@ router.get("/success/:transactionId", async (req, res) => {
     const { transactionId } = req.params;
     const { val_id, amount, card_type, card_issuer, bank_tran_id } = req.query;
 
+    console.log("Payment success GET callback:", {
+      transactionId,
+      val_id,
+      amount,
+      card_type,
+      card_issuer,
+      bank_tran_id,
+    });
+
     const payment = await Payment.findOne({ transactionId });
-    if (payment && payment.status === "pending") {
+
+    if (!payment) {
+      console.error("Payment not found for transaction:", transactionId);
+      return res.redirect(
+        `${process.env.CLIENT_URL}/payment/fail/${transactionId}`,
+      );
+    }
+
+    if (payment.status === "pending") {
       // Update payment status
       await Payment.findByIdAndUpdate(payment._id, {
         status: "success",
@@ -145,12 +162,23 @@ router.get("/success/:transactionId", async (req, res) => {
         cardIssuer: card_issuer,
         validatedOn: new Date(),
       });
+      console.log("Payment updated to success:", transactionId);
+    } else {
+      console.log(
+        "Payment already processed:",
+        transactionId,
+        "Status:",
+        payment.status,
+      );
     }
 
     // Redirect to frontend
-    res.redirect(`${process.env.CLIENT_URL}/payment/success/${transactionId}`);
+    const redirectUrl = `${process.env.CLIENT_URL}/payment/success/${transactionId}`;
+    console.log("Redirecting to:", redirectUrl);
+    res.redirect(redirectUrl);
   } catch (error) {
-    console.error("Payment success error:", error);
+    console.error("Payment success GET error:", error);
+    console.error("Error stack:", error.stack);
     res.redirect(
       `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
     );
@@ -163,8 +191,25 @@ router.post("/success/:transactionId", async (req, res) => {
     const { transactionId } = req.params;
     const { val_id, amount, card_type, card_issuer, bank_tran_id } = req.body;
 
+    console.log("Payment success POST callback:", {
+      transactionId,
+      val_id,
+      amount,
+      card_type,
+      card_issuer,
+      bank_tran_id,
+    });
+
     const payment = await Payment.findOne({ transactionId });
-    if (payment && payment.status === "pending") {
+
+    if (!payment) {
+      console.error("Payment not found for transaction:", transactionId);
+      return res.redirect(
+        `${process.env.CLIENT_URL}/payment/fail/${transactionId}`,
+      );
+    }
+
+    if (payment.status === "pending") {
       // Update payment status
       await Payment.findByIdAndUpdate(payment._id, {
         status: "success",
@@ -173,12 +218,23 @@ router.post("/success/:transactionId", async (req, res) => {
         cardIssuer: card_issuer,
         validatedOn: new Date(),
       });
+      console.log("Payment updated to success:", transactionId);
+    } else {
+      console.log(
+        "Payment already processed:",
+        transactionId,
+        "Status:",
+        payment.status,
+      );
     }
 
     // Redirect to frontend
-    res.redirect(`${process.env.CLIENT_URL}/payment/success/${transactionId}`);
+    const redirectUrl = `${process.env.CLIENT_URL}/payment/success/${transactionId}`;
+    console.log("Redirecting to:", redirectUrl);
+    res.redirect(redirectUrl);
   } catch (error) {
-    console.error("Payment success error:", error);
+    console.error("Payment success POST error:", error);
+    console.error("Error stack:", error.stack);
     res.redirect(
       `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
     );
