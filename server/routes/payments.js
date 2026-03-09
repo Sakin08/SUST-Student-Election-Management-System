@@ -172,16 +172,20 @@ router.get("/success/:transactionId", async (req, res) => {
       );
     }
 
-    // Redirect to frontend
-    const redirectUrl = `${process.env.CLIENT_URL}/payment/success/${transactionId}`;
+    // Redirect to frontend with fallback
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    const redirectUrl = `${clientUrl}/payment/success/${transactionId}`;
     console.log("Redirecting to:", redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("Payment success GET error:", error);
     console.error("Error stack:", error.stack);
-    res.redirect(
-      `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
-    );
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/fail/${req.params.transactionId}`);
   }
 });
 
@@ -228,16 +232,20 @@ router.post("/success/:transactionId", async (req, res) => {
       );
     }
 
-    // Redirect to frontend
-    const redirectUrl = `${process.env.CLIENT_URL}/payment/success/${transactionId}`;
+    // Redirect to frontend with fallback
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    const redirectUrl = `${clientUrl}/payment/success/${transactionId}`;
     console.log("Redirecting to:", redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("Payment success POST error:", error);
     console.error("Error stack:", error.stack);
-    res.redirect(
-      `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
-    );
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/fail/${req.params.transactionId}`);
   }
 });
 
@@ -278,12 +286,16 @@ router.get("/fail/:transactionId", async (req, res) => {
       await Payment.findByIdAndUpdate(payment._id, { status: "failed" });
     }
 
-    res.redirect(`${process.env.CLIENT_URL}/payment/fail/${transactionId}`);
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/fail/${transactionId}`);
   } catch (error) {
     console.error("Payment fail error:", error);
-    res.redirect(
-      `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
-    );
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/fail/${req.params.transactionId}`);
   }
 });
 
@@ -297,12 +309,16 @@ router.post("/fail/:transactionId", async (req, res) => {
       await Payment.findByIdAndUpdate(payment._id, { status: "failed" });
     }
 
-    res.redirect(`${process.env.CLIENT_URL}/payment/fail/${transactionId}`);
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/fail/${transactionId}`);
   } catch (error) {
     console.error("Payment fail error:", error);
-    res.redirect(
-      `${process.env.CLIENT_URL}/payment/fail/${req.params.transactionId}`,
-    );
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/fail/${req.params.transactionId}`);
   }
 });
 
@@ -333,12 +349,16 @@ router.get("/cancel/:transactionId", async (req, res) => {
       await Payment.findByIdAndUpdate(payment._id, { status: "cancelled" });
     }
 
-    res.redirect(`${process.env.CLIENT_URL}/payment/cancel/${transactionId}`);
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/cancel/${transactionId}`);
   } catch (error) {
     console.error("Payment cancel error:", error);
-    res.redirect(
-      `${process.env.CLIENT_URL}/payment/cancel/${req.params.transactionId}`,
-    );
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/cancel/${req.params.transactionId}`);
   }
 });
 
@@ -352,12 +372,16 @@ router.post("/cancel/:transactionId", async (req, res) => {
       await Payment.findByIdAndUpdate(payment._id, { status: "cancelled" });
     }
 
-    res.redirect(`${process.env.CLIENT_URL}/payment/cancel/${transactionId}`);
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/cancel/${transactionId}`);
   } catch (error) {
     console.error("Payment cancel error:", error);
-    res.redirect(
-      `${process.env.CLIENT_URL}/payment/cancel/${req.params.transactionId}`,
-    );
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "https://sust-student-election-management-sy.vercel.app";
+    res.redirect(`${clientUrl}/payment/cancel/${req.params.transactionId}`);
   }
 });
 
