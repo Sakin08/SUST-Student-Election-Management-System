@@ -135,34 +135,45 @@ router.get("/success/:transactionId", async (req, res) => {
     const { transactionId } = req.params;
     const { val_id, amount, card_type, card_issuer, bank_tran_id } = req.query;
 
-    console.log("Payment success GET callback:", {
-      transactionId,
-      val_id,
-      amount,
-      card_type,
-      card_issuer,
-      bank_tran_id,
-    });
+    console.log("=== Payment Success GET Callback ===");
+    console.log("Transaction ID:", transactionId);
+    console.log("Request query:", req.query);
 
-    const payment = await Payment.findOne({ transactionId });
+    // Check if payment exists
+    const payment = await Payment.findOne({ transactionId }).catch((err) => {
+      console.error("Database query error:", err);
+      return null;
+    });
 
     if (!payment) {
       console.error("Payment not found for transaction:", transactionId);
-      return res.redirect(
-        `${process.env.CLIENT_URL}/payment/fail/${transactionId}`,
-      );
+      const clientUrl =
+        process.env.CLIENT_URL ||
+        "https://sust-student-election-management-sy.vercel.app";
+      return res.redirect(`${clientUrl}/payment/fail/${transactionId}`);
     }
 
+    console.log("Payment found:", {
+      id: payment._id,
+      status: payment.status,
+      amount: payment.amount,
+    });
+
+    // Update payment status if pending
     if (payment.status === "pending") {
-      // Update payment status
-      await Payment.findByIdAndUpdate(payment._id, {
-        status: "success",
-        bankTransactionId: bank_tran_id,
-        cardType: card_type,
-        cardIssuer: card_issuer,
-        validatedOn: new Date(),
-      });
-      console.log("Payment updated to success:", transactionId);
+      try {
+        await Payment.findByIdAndUpdate(payment._id, {
+          status: "success",
+          bankTransactionId: bank_tran_id,
+          cardType: card_type,
+          cardIssuer: card_issuer,
+          validatedOn: new Date(),
+        });
+        console.log("Payment updated to success:", transactionId);
+      } catch (updateError) {
+        console.error("Error updating payment:", updateError);
+        // Continue anyway - payment was successful
+      }
     } else {
       console.log(
         "Payment already processed:",
@@ -178,14 +189,22 @@ router.get("/success/:transactionId", async (req, res) => {
       "https://sust-student-election-management-sy.vercel.app";
     const redirectUrl = `${clientUrl}/payment/success/${transactionId}`;
     console.log("Redirecting to:", redirectUrl);
-    res.redirect(redirectUrl);
+    console.log("=== End Payment Success Callback ===");
+
+    return res.redirect(redirectUrl);
   } catch (error) {
-    console.error("Payment success GET error:", error);
+    console.error("=== Payment Success GET Error ===");
+    console.error("Error:", error);
+    console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
+    console.error("=== End Error ===");
+
     const clientUrl =
       process.env.CLIENT_URL ||
       "https://sust-student-election-management-sy.vercel.app";
-    res.redirect(`${clientUrl}/payment/fail/${req.params.transactionId}`);
+    return res.redirect(
+      `${clientUrl}/payment/fail/${req.params.transactionId}`,
+    );
   }
 });
 
@@ -195,34 +214,46 @@ router.post("/success/:transactionId", async (req, res) => {
     const { transactionId } = req.params;
     const { val_id, amount, card_type, card_issuer, bank_tran_id } = req.body;
 
-    console.log("Payment success POST callback:", {
-      transactionId,
-      val_id,
-      amount,
-      card_type,
-      card_issuer,
-      bank_tran_id,
-    });
+    console.log("=== Payment Success POST Callback ===");
+    console.log("Transaction ID:", transactionId);
+    console.log("Request body:", req.body);
+    console.log("Request query:", req.query);
 
-    const payment = await Payment.findOne({ transactionId });
+    // Check if payment exists
+    const payment = await Payment.findOne({ transactionId }).catch((err) => {
+      console.error("Database query error:", err);
+      return null;
+    });
 
     if (!payment) {
       console.error("Payment not found for transaction:", transactionId);
-      return res.redirect(
-        `${process.env.CLIENT_URL}/payment/fail/${transactionId}`,
-      );
+      const clientUrl =
+        process.env.CLIENT_URL ||
+        "https://sust-student-election-management-sy.vercel.app";
+      return res.redirect(`${clientUrl}/payment/fail/${transactionId}`);
     }
 
+    console.log("Payment found:", {
+      id: payment._id,
+      status: payment.status,
+      amount: payment.amount,
+    });
+
+    // Update payment status if pending
     if (payment.status === "pending") {
-      // Update payment status
-      await Payment.findByIdAndUpdate(payment._id, {
-        status: "success",
-        bankTransactionId: bank_tran_id,
-        cardType: card_type,
-        cardIssuer: card_issuer,
-        validatedOn: new Date(),
-      });
-      console.log("Payment updated to success:", transactionId);
+      try {
+        await Payment.findByIdAndUpdate(payment._id, {
+          status: "success",
+          bankTransactionId: bank_tran_id,
+          cardType: card_type,
+          cardIssuer: card_issuer,
+          validatedOn: new Date(),
+        });
+        console.log("Payment updated to success:", transactionId);
+      } catch (updateError) {
+        console.error("Error updating payment:", updateError);
+        // Continue anyway - payment was successful
+      }
     } else {
       console.log(
         "Payment already processed:",
@@ -238,14 +269,24 @@ router.post("/success/:transactionId", async (req, res) => {
       "https://sust-student-election-management-sy.vercel.app";
     const redirectUrl = `${clientUrl}/payment/success/${transactionId}`;
     console.log("Redirecting to:", redirectUrl);
-    res.redirect(redirectUrl);
+    console.log("=== End Payment Success Callback ===");
+
+    return res.redirect(redirectUrl);
   } catch (error) {
-    console.error("Payment success POST error:", error);
+    console.error("=== Payment Success POST Error ===");
+    console.error("Error:", error);
+    console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
+    console.error("Request params:", req.params);
+    console.error("Request body:", req.body);
+    console.error("=== End Error ===");
+
     const clientUrl =
       process.env.CLIENT_URL ||
       "https://sust-student-election-management-sy.vercel.app";
-    res.redirect(`${clientUrl}/payment/fail/${req.params.transactionId}`);
+    return res.redirect(
+      `${clientUrl}/payment/fail/${req.params.transactionId}`,
+    );
   }
 });
 
