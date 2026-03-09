@@ -15,6 +15,23 @@ router.post("/init", protect, async (req, res) => {
   try {
     const { electionId, positionId, amount } = req.body;
 
+    // Validate required fields
+    if (!electionId || !positionId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: electionId, positionId, or amount",
+      });
+    }
+
+    // Validate SSLCommerz credentials
+    if (!store_id || !store_passwd) {
+      console.error("SSLCommerz credentials not configured");
+      return res.status(500).json({
+        success: false,
+        message: "Payment gateway not configured",
+      });
+    }
+
     // Generate unique transaction ID
     const transactionId = `TXN${Date.now()}${req.user._id.toString().slice(-4)}`;
 
@@ -54,8 +71,16 @@ router.post("/init", protect, async (req, res) => {
       ship_country: "Bangladesh",
     };
 
+    console.log("Initializing SSLCommerz payment with data:", {
+      ...data,
+      store_id,
+      is_live,
+    });
+
     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
     const apiResponse = await sslcz.init(data);
+
+    console.log("SSLCommerz API response:", apiResponse);
 
     if (apiResponse.GatewayPageURL) {
       res.json({
@@ -65,9 +90,12 @@ router.post("/init", protect, async (req, res) => {
       });
     } else {
       await Payment.findByIdAndUpdate(payment._id, { status: "failed" });
-      res
-        .status(400)
-        .json({ success: false, message: "Payment initialization failed" });
+      console.error("SSLCommerz initialization failed:", apiResponse);
+      res.status(400).json({
+        success: false,
+        message: "Payment initialization failed",
+        details: apiResponse,
+      });
     }
   } catch (error) {
     console.error("Payment init error:", error);

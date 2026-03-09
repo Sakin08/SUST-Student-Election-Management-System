@@ -156,12 +156,14 @@ const CandidateApplication = () => {
           `${API_URL}/api/candidates/my-applications`,
         );
         const existingApplication = myApplicationsRes.data.find(
-          (app) => app.electionId._id === electionId,
+          (app) => app.electionId?._id === electionId,
         );
         if (existingApplication) {
           setAlreadyApplied(true);
+          const positionTitle =
+            existingApplication.positionId?.title || "একটি পদ";
           setMessage(
-            `আপনি ইতিমধ্যে "${existingApplication.positionId.title}" পদের জন্য আবেদন করেছেন। স্ট্যাটাস: ${
+            `আপনি ইতিমধ্যে "${positionTitle}" পদের জন্য আবেদন করেছেন। স্ট্যাটাস: ${
               existingApplication.status === "pending"
                 ? "অপেক্ষমাণ"
                 : existingApplication.status === "approved"
@@ -346,7 +348,11 @@ const CandidateApplication = () => {
         window.location.href = response.data.paymentUrl;
       }
     } catch (error) {
-      setMessage("পেমেন্ট শুরু করতে ব্যর্থ হয়েছে");
+      console.error("Payment initialization error:", error);
+      console.error("Error response:", error.response?.data);
+      const errorMessage =
+        error.response?.data?.message || "পেমেন্ট শুরু করতে ব্যর্থ হয়েছে";
+      setMessage(errorMessage);
       setIsSubmitting(false);
     }
   };
